@@ -677,51 +677,76 @@ class OrdersTab(ttk.Frame):
                 self._current_order.customer_phone = c.get("phone", "")
 
     # ------------------------------------------------------------------
-    # PDF / text generation (stubs — wired to PdfService in Phase 4)
+    # PDF / text generation
     # ------------------------------------------------------------------
 
     def _gen_quote(self) -> None:
         if not self._current_order:
             messagebox.showinfo("Info", "Select an order first.", parent=self)
             return
-        messagebox.showinfo(
-            "Quote PDF",
-            f"Quote PDF for Order #{self._current_order.order_number} — "
-            "PDF service will be wired in Phase 4.",
-            parent=self,
-        )
+        order = self._svc.get_order(self._current_order.id)
+        if not order:
+            return
+        try:
+            from src.services.pdf_service import PdfService
+            pdf = PdfService(self._svc._db)
+            if not pdf.is_available():
+                messagebox.showerror(
+                    "Missing Dependency",
+                    "ReportLab is not installed.\nRun: pip install reportlab",
+                    parent=self)
+                return
+            path = pdf.generate_quote(order)
+            pdf.open_file(path)
+        except Exception as exc:
+            messagebox.showerror("PDF Error", str(exc), parent=self)
 
     def _gen_receipt(self) -> None:
         if not self._current_order:
             messagebox.showinfo("Info", "Select an order first.", parent=self)
             return
-        messagebox.showinfo(
-            "Receipt PDF",
-            f"Receipt PDF for Order #{self._current_order.order_number} — "
-            "PDF service will be wired in Phase 4.",
-            parent=self,
-        )
+        order = self._svc.get_order(self._current_order.id)
+        if not order:
+            return
+        try:
+            from src.services.pdf_service import PdfService
+            pdf = PdfService(self._svc._db)
+            if not pdf.is_available():
+                messagebox.showerror(
+                    "Missing Dependency",
+                    "ReportLab is not installed.\nRun: pip install reportlab",
+                    parent=self)
+                return
+            path = pdf.generate_receipt(order)
+            pdf.open_file(path)
+        except Exception as exc:
+            messagebox.showerror("PDF Error", str(exc), parent=self)
 
     def _gen_text(self) -> None:
         if not self._current_order:
             return
-        o = self._current_order
-        lines = [
-            f"Order #{o.order_number}  —  {o.customer_name}",
-            f"Date: {o.created_date[:10]}",
-            "-" * 40,
-        ]
-        for item in o.items:
-            lines.append(
-                f"  {item.name}  {item.weight:.1f}g × {item.quantity} "
-                f"@ {item.rate_per_gram:.1f} EGP/g = {item.print_cost:.2f} EGP"
-            )
-        lines += [
-            "-" * 40,
-            f"Total: {o.total:.2f} EGP",
-            f"Payment: {o.payment_method}",
-        ]
-        _TextDialog(self, "\n".join(lines))
+        order = self._svc.get_order(self._current_order.id)
+        if not order:
+            return
+        try:
+            from src.services.pdf_service import PdfService
+            text = PdfService(self._svc._db).generate_text_receipt(order)
+        except Exception:
+            o = order
+            rows = [
+                f"Order #{o.order_number}  -  {o.customer_name}",
+                f"Date: {o.created_date[:10]}",
+                "-" * 40,
+            ]
+            for item in o.items:
+                rows.append(
+                    f"  {item.name}  {item.weight:.1f}g x {item.quantity}"
+                    f" @ {item.rate_per_gram:.1f} EGP/g = {item.print_cost:.2f} EGP"
+                )
+            rows += ["-" * 40, f"Total: {o.total:.2f} EGP", f"Payment: {o.payment_method}"]
+            text = "\n".join(rows)
+        _TextDialog(self, text)
+
 
     # ------------------------------------------------------------------
     # Permissions

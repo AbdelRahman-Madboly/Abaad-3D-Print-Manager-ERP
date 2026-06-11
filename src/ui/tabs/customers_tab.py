@@ -241,7 +241,7 @@ class CustomersTab(ttk.Frame):
                 o.order_number or o.id[:6],
                 o.created_date[:10] if o.created_date else "—",
                 o.status,
-                format_currency(o.final_total),
+                format_currency(o.total),
             ))
 
         can_manage = self._user.has_permission(Permission.MANAGE_CUSTOMERS)
