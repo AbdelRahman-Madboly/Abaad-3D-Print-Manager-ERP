@@ -21,12 +21,14 @@ from src.core.models import (
     Printer,
     PrintFailure,
     Expense,
-    SpoolCategory,
-    SpoolStatus,
-    PaymentMethod,
     calculate_payment_fee,
 )
-from src.core.config import DEFAULT_RATE_PER_GRAM, DEFAULT_COST_PER_GRAM
+from src.core.config import (
+    DEFAULT_RATE_PER_GRAM,
+    DEFAULT_COST_PER_GRAM,
+    PAYMENT_METHODS,
+    SPOOL_STATUSES,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -211,22 +213,22 @@ class TestCalculateTotals:
 
     def test_vodacash_fee_hits_minimum(self):
         """100 EGP × 0.5% = 0.50 → clamped to min 1.00 EGP"""
-        fee = calculate_payment_fee(100.0, PaymentMethod.VODAFONE_CASH.value)
+        fee = calculate_payment_fee(100.0, "Vodafone Cash")
         assert fee == pytest.approx(1.00)
 
     def test_vodacash_fee_hits_maximum(self):
         """4000 EGP × 0.5% = 20.00 → clamped to max 15.00 EGP"""
-        fee = calculate_payment_fee(4000.0, PaymentMethod.VODAFONE_CASH.value)
+        fee = calculate_payment_fee(4000.0, "Vodafone Cash")
         assert fee == pytest.approx(15.00)
 
     def test_instapay_fee_hits_minimum(self):
         """100 EGP × 0.1% = 0.10 → clamped to min 0.50 EGP"""
-        fee = calculate_payment_fee(100.0, PaymentMethod.INSTAPAY.value)
+        fee = calculate_payment_fee(100.0, "InstaPay")
         assert fee == pytest.approx(0.50)
 
     def test_instapay_fee_no_cap(self):
         """1000 EGP × 0.1% = 1.00 → no clamping"""
-        fee = calculate_payment_fee(1000.0, PaymentMethod.INSTAPAY.value)
+        fee = calculate_payment_fee(1000.0, "InstaPay")
         assert fee == pytest.approx(1.00)
 
     def test_order_discount_10_percent(self):
@@ -292,4 +294,24 @@ class TestFilamentSpoolPending:
         s = self._fresh_spool()
         s.current_weight_grams = 25.0
         s.commit_filament(10.0)
-        assert s.status == SpoolStatus.LOW.value
+        assert s.status == "low"
+
+
+# ---------------------------------------------------------------------------
+# String-constant alignment
+# ---------------------------------------------------------------------------
+#
+# PaymentMethod/SpoolStatus/SpoolCategory enums were deliberately removed
+# from src.core.models (see its module docstring) — string lists in
+# src.core.config are the single source of truth instead. The literals used
+# above ("Vodafone Cash", "InstaPay", "low") must stay consistent with those
+# lists; this class guards against silent drift.
+
+class TestPaymentAndStatusConstants:
+
+    def test_payment_method_literals_are_valid(self):
+        assert "Vodafone Cash" in PAYMENT_METHODS
+        assert "InstaPay" in PAYMENT_METHODS
+
+    def test_spool_status_literal_is_valid(self):
+        assert "low" in SPOOL_STATUSES
