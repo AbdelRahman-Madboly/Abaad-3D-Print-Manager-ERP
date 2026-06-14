@@ -239,7 +239,7 @@ class App:
             inv = self._svc["inventory"].get_inventory_summary()
             self._status_spools.config(
                 text=f"🧵 {inv.get('active_spools', 0)} spools / "
-                     f"{inv.get('total_available', 0):.0f}g avail")
+                     f"{inv.get('available_weight_g', 0):.0f}g avail")
 
             if self._user.has_permission(Permission.VIEW_FINANCIAL):
                 stats = self._svc["finance"].get_full_statistics()
