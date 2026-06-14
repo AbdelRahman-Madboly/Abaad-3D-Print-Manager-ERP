@@ -1,6 +1,6 @@
 # File Tree: Abaad-3D-Print-Manager-V5.0-ERP-Edition
 
-**Root Path:** `c:\Dan_WS\Abaad-3D-Print-Manager-V5.0-ERP-Edition`
+**Root Path:** `/home/madboly/projects/products/Abaad-3D-ERP`
 
 ```
 ├── assets
@@ -60,16 +60,16 @@
 │       └── helpers.py
 ├── tests
 │   ├── test_database.py
+│   ├── test_finance_service.py
 │   ├── test_inventory_service.py
 │   ├── test_migration.py
 │   ├── test_models.py
-│   └── test_order_service.py
+│   ├── test_order_service.py
+│   └── test_pdf_service.py
 ├── .gitignore
-├── BUG_REPORT_AND_FIX_PLAN.md
 ├── FileTree.md
 ├── LICENSE
 ├── Launch_App.bat
-├── PROGRESS_TRACKER.md
 ├── README.md
 ├── SETUP.bat
 ├── launch.sh
