@@ -369,12 +369,22 @@ class FinanceService:
         stats.gross_profit           = sum(o.profit          for o in active_orders)
 
         printed_statuses = ("Delivered", "Ready", "In Progress")
+        # TODO(phase4): total_weight_printed and total_time_printed both
+        # rely on Order.total_weight / Order.total_time, which sum
+        # Order.items — but Order.from_dict() on a raw `orders` row (no
+        # "items" key) always yields an empty items list, so both are
+        # effectively 0 today. A correct fix needs per-order print_items
+        # (e.g. self._db.get_items(o.id) for each order), which adds N+1
+        # queries to get_full_statistics(). That's too heavy for this
+        # method's current hot-path use (called from the app status bar on
+        # every save). Phase 4 (Dashboard) should add a bulk/aggregate
+        # print_items query (e.g. a single DatabaseManager method that sums
+        # weight/time per order or per date range) and wire both fields up
+        # from that instead of looping get_items() per order here.
         stats.total_weight_printed = sum(
             o.total_weight for o in orders if o.status in printed_statuses
         )
-        # total_time requires items — approximate from order fields
-        # (items not pre-loaded here for performance)
-        stats.total_time_printed = 0  # filled by detailed pass if needed
+        stats.total_time_printed = 0  # see TODO above
 
         # ---- Failures ----
         fail_stats = self.get_failure_stats()
@@ -553,6 +563,182 @@ class FinanceService:
             "start_date":       start_date or "",
             "end_date":         end_date or "",
         }
+
+    # ==================================================================
+    # Analytics  (used by AnalyticsTab)
+    # ==================================================================
+
+    def get_monthly_revenue(
+        self,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+    ) -> List[Dict]:
+        """Return per-month revenue/costs/profit for the given date range.
+
+        Args:
+            start: ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no lower bound".
+            end:   ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no upper bound".
+
+        Returns:
+            List of dicts sorted oldest-first, each with:
+            ``month`` (``"YYYY-MM"``), ``revenue``, ``costs`` (material +
+            electricity + depreciation), and ``profit``.
+        """
+        from src.core.models import Order
+
+        order_rows = self._db.get_all_orders(include_deleted=False)
+        orders = [Order.from_dict(r) for r in order_rows if r.get("status") != "Cancelled"]
+
+        if start:
+            orders = [o for o in orders if o.created_date[:10] >= start]
+        if end:
+            orders = [o for o in orders if o.created_date[:10] <= end]
+
+        buckets: Dict[str, Dict] = defaultdict(lambda: {
+            "revenue": 0.0, "costs": 0.0, "profit": 0.0,
+        })
+        for o in orders:
+            key = o.created_date[:7]
+            buckets[key]["revenue"] += o.total
+            buckets[key]["costs"]   += (
+                o.material_cost + o.electricity_cost + o.depreciation_cost
+            )
+            buckets[key]["profit"]  += o.profit
+
+        return [
+            {
+                "month":   month,
+                "revenue": round(b["revenue"], 2),
+                "costs":   round(b["costs"], 2),
+                "profit":  round(b["profit"], 2),
+            }
+            for month, b in sorted(buckets.items())
+        ]
+
+    def get_order_status_breakdown(
+        self,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+    ) -> List[Dict]:
+        """Return order counts grouped by status for the given date range.
+
+        Args:
+            start: ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no lower bound".
+            end:   ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no upper bound".
+
+        Returns:
+            List of ``{"status": str, "count": int}`` dicts, sorted by
+            status name. Only non-deleted orders are considered.
+        """
+        from src.core.models import Order
+
+        order_rows = self._db.get_all_orders(include_deleted=False)
+        orders = [Order.from_dict(r) for r in order_rows]
+
+        if start:
+            orders = [o for o in orders if o.created_date[:10] >= start]
+        if end:
+            orders = [o for o in orders if o.created_date[:10] <= end]
+
+        counts: Dict[str, int] = defaultdict(int)
+        for o in orders:
+            counts[o.status] += 1
+
+        return [
+            {"status": status, "count": count}
+            for status, count in sorted(counts.items())
+        ]
+
+    def get_expenses_by_category(
+        self,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+    ) -> List[Dict]:
+        """Return expense totals grouped by category for a date range.
+
+        Args:
+            start: ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no lower bound".
+            end:   ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no upper bound".
+
+        Returns:
+            List of ``{"category": str, "total": float}`` dicts, sorted by
+            category name.
+        """
+        expenses = self.get_all_expenses()
+        if start:
+            expenses = [e for e in expenses if e.date[:10] >= start]
+        if end:
+            expenses = [e for e in expenses if e.date[:10] <= end]
+
+        totals: Dict[str, float] = defaultdict(float)
+        for e in expenses:
+            totals[e.category] += e.total_cost
+
+        return [
+            {"category": category, "total": round(total, 2)}
+            for category, total in sorted(totals.items())
+        ]
+
+    def get_filament_usage_by_color(
+        self,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+    ) -> List[Dict]:
+        """Return total filament used (grams) per colour for a date range.
+
+        Approach: walk non-cancelled, non-deleted orders whose
+        ``created_date`` falls in ``[start, end]``, load each order's
+        print items, and sum ``weight × quantity`` per item colour. This
+        ties usage directly to the orders that consumed it (consistent
+        with the date filtering used by the other analytics methods).
+
+        ``FilamentHistory`` records were considered instead, but they're
+        keyed by spool *archive* date (when a spool was trashed), not by
+        when the filament was actually used on an order — so they don't
+        line up with the period the user selects in the Analytics tab.
+
+        Note: this loads print_items per matching order (one query per
+        order). For a small print-shop's order volume this is fine; if it
+        becomes a bottleneck, a bulk/aggregate print_items query could be
+        added to ``DatabaseManager`` in a later phase.
+
+        Args:
+            start: ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no lower bound".
+            end:   ISO date string ``'YYYY-MM-DD'`` (inclusive). ``None``
+                   or empty means "no upper bound".
+
+        Returns:
+            List of ``{"color": str, "grams": float}`` dicts, sorted by
+            colour name, excluding colours with zero usage.
+        """
+        from src.core.models import Order, PrintItem
+
+        order_rows = self._db.get_all_orders(include_deleted=False)
+        orders = [Order.from_dict(r) for r in order_rows if r.get("status") != "Cancelled"]
+
+        if start:
+            orders = [o for o in orders if o.created_date[:10] >= start]
+        if end:
+            orders = [o for o in orders if o.created_date[:10] <= end]
+
+        totals: Dict[str, float] = defaultdict(float)
+        for o in orders:
+            for item_row in self._db.get_items(o.id):
+                item = PrintItem.from_dict(item_row)
+                totals[item.color] += item.total_weight
+
+        return [
+            {"color": color, "grams": round(grams, 1)}
+            for color, grams in sorted(totals.items())
+            if grams > 0
+        ]
 
     # ------------------------------------------------------------------
     # Private
