@@ -285,20 +285,14 @@ class SettingsTab(ttk.Frame):
     def _db_get(self, key: str) -> str:
         """Read a single key from the settings table."""
         try:
-            rows = self._db.execute_query(
-                "SELECT value FROM settings WHERE key = ?", (key,))
-            return rows[0]["value"] if rows else ""
+            return self._db.get_setting(key, default="")
         except Exception:
             return ""
 
     def _db_set(self, key: str, value: str) -> None:
         """Upsert a key in the settings table."""
         try:
-            self._db.execute_update(
-                """INSERT INTO settings (key, value)
-                   VALUES (?, ?)
-                   ON CONFLICT(key) DO UPDATE SET value = excluded.value""",
-                (key, value))
+            self._db.save_setting(key, value)
         except Exception as exc:
             print(f"Settings save error: {exc}")
 
@@ -382,9 +376,7 @@ class SettingsTab(ttk.Frame):
             if not lbl:
                 continue
             try:
-                rows = self._db.execute_query(
-                    f"SELECT COUNT(*) AS cnt FROM {table}")
-                count = rows[0]["cnt"] if rows else 0
+                count = self._db.get_table_count(table)
                 lbl.config(text=str(count))
             except Exception:
                 lbl.config(text="—")
