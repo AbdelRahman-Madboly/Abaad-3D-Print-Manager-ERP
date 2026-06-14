@@ -23,6 +23,14 @@ def db():
     return DatabaseManager(":memory:")
 
 
+@pytest.fixture
+def file_db(tmp_path):
+    """A file-backed DatabaseManager — used where on-disk pragma behavior
+    (e.g. WAL journal mode, which SQLite cannot use for ":memory:" DBs)
+    needs to be verified."""
+    return DatabaseManager(str(tmp_path / "test.db"))
+
+
 def _customer_record(name: str = "Charlie") -> dict:
     import uuid
     return {
@@ -89,7 +97,7 @@ def _order_record(number: int = 1, customer_name: str = "Charlie") -> dict:
         "is_rd_project":         0,
         "is_deleted":            0,
         "deposit_amount":        0.0,
-        "deposit_paid":          0,
+        "deposit_received":      0,
         "notes":                 "",
         "created_date":          "2024-01-01 00:00:00",
         "updated_date":          "2024-01-01 00:00:00",
@@ -104,11 +112,19 @@ def _order_record(number: int = 1, customer_name: str = "Charlie") -> dict:
 
 class TestDatabasePragmas:
 
-    def test_wal_mode(self, db):
-        """WAL journal mode should be active."""
-        with db._transaction() as conn:
+    def test_wal_mode_on_file_db(self, file_db):
+        """WAL journal mode should be active for file-backed databases."""
+        with file_db._transaction() as conn:
             row = conn.execute("PRAGMA journal_mode").fetchone()
         assert row[0].lower() == "wal"
+
+    def test_journal_mode_on_memory_db(self, db):
+        """SQLite always reports 'memory' journal mode for ':memory:'
+        databases — this is expected, correct behaviour (WAL is not
+        supported for in-memory databases), not a bug."""
+        with db._transaction() as conn:
+            row = conn.execute("PRAGMA journal_mode").fetchone()
+        assert row[0].lower() == "memory"
 
     def test_foreign_keys_enabled(self, db):
         """Foreign-key enforcement should be on (returns 1)."""
@@ -170,6 +186,39 @@ class TestTableCount:
         db.save_customer(_customer_record("Jack"))
         after = db.get_table_count("customers")
         assert after == before + 2
+
+
+class TestSettings:
+
+    def test_get_setting_default_when_missing(self, db):
+        assert db.get_setting("does_not_exist", default="fallback") == "fallback"
+
+    def test_save_and_get_setting(self, db):
+        db.save_setting("company_name", "Acme 3D")
+        assert db.get_setting("company_name") == "Acme 3D"
+
+    def test_save_setting_overwrites_existing(self, db):
+        db.save_setting("company_name", "Acme 3D")
+        db.save_setting("company_name", "Acme Prints")
+        assert db.get_setting("company_name") == "Acme Prints"
+
+    def test_get_all_settings_includes_seeded_defaults(self, db):
+        # DEFAULT_SETTINGS are seeded on first run (see _seed_defaults)
+        all_settings = db.get_all_settings()
+        assert "company_name" in all_settings
+        assert "next_order_number" in all_settings
+
+    def test_save_all_settings_persists_multiple_keys(self, db):
+        ok = db.save_all_settings({
+            "company_name":    "Acme 3D",
+            "company_phone":   "0100000000",
+            "company_address": "Cairo, Egypt",
+        })
+        assert ok is True
+        all_settings = db.get_all_settings()
+        assert all_settings["company_name"]    == "Acme 3D"
+        assert all_settings["company_phone"]   == "0100000000"
+        assert all_settings["company_address"] == "Cairo, Egypt"
 
 
 class TestBackup:
