@@ -101,7 +101,7 @@ class TestInventoryService:
         svc.add_spool(color="Light Blue", initial_weight_grams=500.0)
         summary = svc.get_inventory_summary()
         assert summary["active_spools"] >= 2
-        assert summary["total_weight"]  >= pytest.approx(1500.0)
+        assert summary["total_weight_g"] == pytest.approx(1500.0)
 
     def test_add_color(self, svc):
         ok = svc.add_color("Gold")
