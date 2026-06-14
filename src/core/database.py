@@ -21,6 +21,7 @@ import json
 import logging
 import shutil
 import sqlite3
+import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -253,7 +254,15 @@ CREATE INDEX IF NOT EXISTS idx_expenses_date   ON expenses(date);
 # ---------------------------------------------------------------------------
 
 class DatabaseManager:
-    """SQLite database manager — singleton.
+    """SQLite database manager.
+
+    With no arguments this is an application-wide **singleton** backed by
+    ``DB_PATH`` (see :func:`get_database`).
+
+    Passing an explicit ``db_path`` (e.g. ``":memory:"`` for tests, or a
+    file path for migration scripts / test fixtures) returns a fresh,
+    independent instance that does NOT participate in the singleton —
+    each call with an explicit path gets its own isolated database.
 
     All public methods work with plain ``dict`` objects.
     Model conversion lives in the service layer.
@@ -261,17 +270,43 @@ class DatabaseManager:
 
     _instance: Optional["DatabaseManager"] = None
 
-    def __new__(cls) -> "DatabaseManager":
+    def __new__(cls, db_path: Optional[str] = None) -> "DatabaseManager":
+        if db_path is not None:
+            # Explicit path requested (tests / migration scripts) -> always
+            # a brand-new, independent instance; never touches the
+            # application-wide singleton.
+            instance = super().__new__(cls)
+            instance._initialized = False
+            return instance
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self) -> None:
+    def __init__(self, db_path: Optional[str] = None) -> None:
         if self._initialized:
             return
-        self._db_path: Path = DB_PATH
-        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self._is_memory = (db_path == ":memory:")
+        self._memory_conn: Optional[sqlite3.Connection] = None
+
+        if db_path is None:
+            # Default application database
+            self._db_path: Path | str = DB_PATH
+            self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        elif self._is_memory:
+            # SQLite discards a plain ":memory:" database the moment its
+            # only connection closes — and every method here opens/closes
+            # its own connection. A named, shared-cache in-memory database
+            # (unique per instance) plus one long-lived "keepalive"
+            # connection lets the data survive across those per-call
+            # connections for the lifetime of this DatabaseManager.
+            self._db_path = f"file:memdb_{uuid.uuid4().hex}?mode=memory&cache=shared"
+            self._memory_conn = sqlite3.connect(self._db_path, uri=True)
+        else:
+            self._db_path = Path(db_path)
+            self._db_path.parent.mkdir(parents=True, exist_ok=True)
+
         self._init_db()
         self._initialized = True
 
@@ -281,7 +316,10 @@ class DatabaseManager:
 
     def _connect(self) -> sqlite3.Connection:
         """Open a connection with row_factory and pragmas set."""
-        conn = sqlite3.connect(str(self._db_path))
+        if self._is_memory:
+            conn = sqlite3.connect(self._db_path, uri=True)
+        else:
+            conn = sqlite3.connect(str(self._db_path))
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA foreign_keys=ON;")
