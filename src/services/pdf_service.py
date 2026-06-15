@@ -29,7 +29,7 @@ from typing import Optional
 
 from src.core.config import (
     APP_NAME, APP_VERSION,
-    COMPANY, EXPORT_DIR, LOGO_PATH,
+    COMPANY, EXPORT_DIR, LOGO_PATH, PROJECT_ROOT, DEFAULT_SETTINGS,
 )
 from src.utils.helpers import format_currency
 
@@ -227,32 +227,46 @@ class PdfService:
     # ------------------------------------------------------------------
 
     def _load_company(self) -> dict:
+        """Load company settings from DB, falling back to config defaults.
+
+        Phase 2: also reads company_logo_path and currency_symbol.
+        """
+        currency_fallback = DEFAULT_SETTINGS.get("currency_symbol", "EGP")
         base = {
-            "name":          COMPANY["name"],
-            "subtitle":      COMPANY["subtitle"],
-            "phone":         COMPANY["phone"],
-            "address":       COMPANY["address"],
-            "tagline":       COMPANY["tagline"],
-            "social":        COMPANY["social"],
-            "deposit_pct":   50,
-            "validity_days": 7,
-            "footer_note":   "Thank you for your business!",
+            "name":            COMPANY["name"],
+            "subtitle":        COMPANY["subtitle"],
+            "phone":           COMPANY["phone"],
+            "address":         COMPANY["address"],
+            "tagline":         COMPANY["tagline"],
+            "social":          COMPANY["social"],
+            "deposit_pct":     50,
+            "validity_days":   7,
+            "footer_note":     "Thank you for your business!",
+            "logo_path":       LOGO_PATH,        # Path object — resolved below
+            "currency_symbol": currency_fallback,
         }
         if self._db is None:
             return base
         try:
             rows = self._db.get_all_settings()
-            if rows.get("company_name"):     base["name"]          = rows["company_name"]
-            if rows.get("company_subtitle"): base["subtitle"]      = rows["company_subtitle"]
-            if rows.get("company_phone"):    base["phone"]         = rows["company_phone"]
-            if rows.get("company_address"):  base["address"]       = rows["company_address"]
-            if rows.get("company_tagline"):  base["tagline"]       = rows["company_tagline"]
-            if rows.get("company_social"):   base["social"]        = rows["company_social"]
+            if rows.get("company_name"):     base["name"]            = rows["company_name"]
+            if rows.get("company_subtitle"): base["subtitle"]        = rows["company_subtitle"]
+            if rows.get("company_phone"):    base["phone"]           = rows["company_phone"]
+            if rows.get("company_address"):  base["address"]         = rows["company_address"]
+            if rows.get("company_tagline"):  base["tagline"]         = rows["company_tagline"]
+            if rows.get("company_social"):   base["social"]          = rows["company_social"]
+            if rows.get("currency_symbol"):  base["currency_symbol"] = rows["currency_symbol"]
             if rows.get("quote_deposit_pct"):
                 base["deposit_pct"] = float(rows["quote_deposit_pct"])
             if rows.get("quote_validity_days"):
                 base["validity_days"] = int(rows["quote_validity_days"])
-            if rows.get("invoice_footer"):   base["footer_note"]   = rows["invoice_footer"]
+            if rows.get("invoice_footer"):   base["footer_note"]     = rows["invoice_footer"]
+            # Resolve logo: custom path (relative to PROJECT_ROOT) → fallback
+            rel = rows.get("company_logo_path", "")
+            if rel:
+                candidate = PROJECT_ROOT / rel
+                if candidate.exists():
+                    base["logo_path"] = candidate
         except Exception:
             pass  # fallback to config defaults
         return base
@@ -290,11 +304,12 @@ class PdfService:
     def _sec_header(self, order, doc_type: str, company: dict, s) -> list:
         elems = []
 
-        # Logo
+        # Logo — use custom path from settings, fall back to config LOGO_PATH
         logo_cell: object = ""
-        if _RLImage and LOGO_PATH.exists():
+        effective_logo = company.get("logo_path", LOGO_PATH)
+        if _RLImage and Path(effective_logo).exists():
             try:
-                logo_cell = _RLImage(str(LOGO_PATH), width=36*mm, height=36*mm)
+                logo_cell = _RLImage(str(effective_logo), width=36*mm, height=36*mm)
             except Exception:
                 pass
 
