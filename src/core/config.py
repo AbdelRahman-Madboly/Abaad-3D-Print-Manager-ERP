@@ -3,6 +3,12 @@ src/core/config.py
 ==================
 Single source of truth for all constants, paths, and company info.
 Abaad 3D Print Manager — v5.0
+
+Phase 2 changes:
+  - Removed OLD_JSON_DB / OLD_USERS_JSON (v4 migration leftovers)
+  - Added currency_symbol, company_logo_path, app_subtitle, setup_complete
+    to DEFAULT_SETTINGS so the first-run wizard and helpers can fall back
+    to sensible values even on a brand-new database.
 """
 
 import os
@@ -15,10 +21,8 @@ from pathlib import Path
 # Resolves to the folder containing main.py, regardless of cwd
 PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent.parent
 
-DATA_DIR:    Path = PROJECT_ROOT / "data"
-DB_PATH:     Path = DATA_DIR    / "abaad_v5.db"
-OLD_JSON_DB: Path = DATA_DIR    / "abaad_v4.db.json"
-OLD_USERS_JSON: Path = DATA_DIR / "users.json"
+DATA_DIR:   Path = PROJECT_ROOT / "data"
+DB_PATH:    Path = DATA_DIR    / "abaad_v5.db"
 
 EXPORT_DIR:  Path = PROJECT_ROOT / "exports"
 BACKUP_DIR:  Path = DATA_DIR     / "backups"
@@ -35,7 +39,7 @@ APP_VERSION: str = "5.0"
 APP_TITLE:   str = f"{APP_NAME} v{APP_VERSION}"
 
 # ---------------------------------------------------------------------------
-# Company Info
+# Company Info  (fallback defaults; runtime values live in the settings table)
 # ---------------------------------------------------------------------------
 
 COMPANY: dict = {
@@ -88,13 +92,26 @@ DEFAULT_COLORS: list[str] = [
 ]
 
 DEFAULT_SETTINGS: dict = {
-    "company_name":       COMPANY["name"],
-    "company_phone":      COMPANY["phone"],
-    "company_address":    COMPANY["address"],
+    # Company identity
+    "company_name":          COMPANY["name"],
+    "company_phone":         COMPANY["phone"],
+    "company_address":       COMPANY["address"],
+    "company_subtitle":      COMPANY["subtitle"],
+    "company_tagline":       COMPANY["tagline"],
+    "company_social":        COMPANY["social"],
+    # Branding / UI
+    "app_subtitle":          "3D Print Shop Management",
+    "company_logo_path":     "",          # empty → fall back to LOGO_PATH
+    # Currency
+    "currency_symbol":       "EGP",
+    # Pricing defaults
     "default_rate_per_gram": str(DEFAULT_RATE_PER_GRAM),
-    "next_order_number":  "1",
-    "deposit_percent":    "50",
-    "quote_validity_days": "7",
+    # Quote / invoice
+    "next_order_number":     "1",
+    "deposit_percent":       "50",
+    "quote_validity_days":   "7",
+    # Setup wizard
+    "setup_complete":        "0",         # "0" = show wizard on next launch
 }
 
 # ---------------------------------------------------------------------------
