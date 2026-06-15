@@ -6,7 +6,7 @@ Expenses, print failures, and business statistics for Abaad v5.0.
 This service owns three concerns:
   1. Expenses  — CRUD for business expenses
   2. Failures  — logging and resolving failed print jobs
-  3. Statistics — the big aggregation used by StatsTab and AnalyticsTab
+  3. Statistics — the big aggregation used by DashboardTab
 """
 
 import logging
@@ -332,7 +332,7 @@ class FinanceService:
         }
 
     # ==================================================================
-    # Full Statistics  (used by StatsTab)
+    # Full Statistics  (used by DashboardTab)
     # ==================================================================
 
     def get_full_statistics(self) -> dict:
@@ -368,23 +368,16 @@ class FinanceService:
         stats.total_tolerance_discounts = sum(o.tolerance_discount_total for o in active_orders)
         stats.gross_profit           = sum(o.profit          for o in active_orders)
 
-        printed_statuses = ("Delivered", "Ready", "In Progress")
-        # TODO(phase4): total_weight_printed and total_time_printed both
-        # rely on Order.total_weight / Order.total_time, which sum
-        # Order.items — but Order.from_dict() on a raw `orders` row (no
-        # "items" key) always yields an empty items list, so both are
-        # effectively 0 today. A correct fix needs per-order print_items
-        # (e.g. self._db.get_items(o.id) for each order), which adds N+1
-        # queries to get_full_statistics(). That's too heavy for this
-        # method's current hot-path use (called from the app status bar on
-        # every save). Phase 4 (Dashboard) should add a bulk/aggregate
-        # print_items query (e.g. a single DatabaseManager method that sums
-        # weight/time per order or per date range) and wire both fields up
-        # from that instead of looping get_items() per order here.
-        stats.total_weight_printed = sum(
-            o.total_weight for o in orders if o.status in printed_statuses
-        )
-        stats.total_time_printed = 0  # see TODO above
+        printed_statuses = ["Delivered", "Ready", "In Progress"]
+        # Phase 4 fix: Order.from_dict() on a raw `orders` row never
+        # populates `items`, so summing Order.total_weight/total_time here
+        # was always 0. Fixed via a single bulk aggregate query over
+        # print_items (effective weight/time = actual if recorded, else
+        # estimate, × quantity) joined to non-deleted orders in
+        # printed_statuses — no N+1 per-order queries needed.
+        item_totals = self._db.get_print_items_totals(printed_statuses)
+        stats.total_weight_printed = item_totals["total_weight"]
+        stats.total_time_printed   = int(item_totals["total_time"])
 
         # ---- Failures ----
         fail_stats = self.get_failure_stats()
@@ -565,7 +558,7 @@ class FinanceService:
         }
 
     # ==================================================================
-    # Analytics  (used by AnalyticsTab)
+    # Analytics  (used by DashboardTab)
     # ==================================================================
 
     def get_monthly_revenue(

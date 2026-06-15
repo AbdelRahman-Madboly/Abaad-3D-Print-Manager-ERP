@@ -167,3 +167,138 @@ class TestOrderService:
         svc.save_order(order)
         retrieved = svc.get_order(order.id)
         assert retrieved.payment_fee == pytest.approx(1.00)
+
+
+# ---------------------------------------------------------------------------
+# get_orders_needing_attention  (Phase 4 — Dashboard Action Center)
+# ---------------------------------------------------------------------------
+
+class TestGetOrdersNeedingAttention:
+
+    def test_no_alerts_for_empty_db(self, svc, db):
+        result = svc.get_orders_needing_attention()
+        assert result["ready_overdue"] == []
+        assert result["payment_due"] == []
+
+    def test_ready_order_overdue(self, svc, db):
+        _seed_customer(db)
+        order = _make_order()
+        order.items = [_make_item()]
+        svc.save_order(order)
+        svc.update_status(order.id, "Ready")
+
+        # Backdate updated_date beyond ORDER_READY_ALERT_DAYS
+        stale_order = svc.get_order(order.id)
+        stale_order.updated_date = "2000-01-01 00:00:00"
+        db.save_order(stale_order.to_dict())
+
+        result = svc.get_orders_needing_attention()
+        assert any(o.id == order.id for o in result["ready_overdue"])
+
+    def test_ready_order_not_yet_overdue(self, svc, db):
+        _seed_customer(db)
+        order = _make_order()
+        order.items = [_make_item()]
+        svc.save_order(order)
+        svc.update_status(order.id, "Ready")   # updated_date == now
+
+        result = svc.get_orders_needing_attention()
+        assert not any(o.id == order.id for o in result["ready_overdue"])
+
+    def test_payment_due_for_delivered_unpaid_order(self, svc, db):
+        _seed_customer(db)
+        order = _make_order()
+        order.items = [_make_item()]   # total = 200, amount_received = 0
+        svc.save_order(order)
+        svc.update_status(order.id, "Delivered")
+
+        result = svc.get_orders_needing_attention()
+        assert any(o.id == order.id for o in result["payment_due"])
+
+    def test_no_payment_due_when_paid_in_full(self, svc, db):
+        _seed_customer(db)
+        order = _make_order()
+        order.items = [_make_item()]
+        svc.save_order(order)
+        retrieved = svc.get_order(order.id)
+        retrieved.amount_received = retrieved.total
+        db.save_order(retrieved.to_dict())
+        svc.update_status(order.id, "Delivered")
+
+        result = svc.get_orders_needing_attention()
+        assert not any(o.id == order.id for o in result["payment_due"])
+
+    def test_draft_orders_excluded(self, svc, db):
+        _seed_customer(db)
+        order = _make_order()
+        order.items = [_make_item()]
+        svc.save_order(order)   # status stays "Draft"
+
+        result = svc.get_orders_needing_attention()
+        assert not any(o.id == order.id for o in result["ready_overdue"])
+        assert not any(o.id == order.id for o in result["payment_due"])
+
+
+# ---------------------------------------------------------------------------
+# record_print_job wiring on "Ready" transition  (Phase 4 — Task 1 fix)
+# ---------------------------------------------------------------------------
+
+class TestRecordPrintJobOnReadyTransition:
+
+    def test_ready_transition_records_print_job(self, db):
+        from src.services.printer_service import PrinterService
+        printer_svc = PrinterService(db)
+        svc = OrderService(db, printer_service=printer_svc)
+
+        _seed_customer(db)
+        printer = printer_svc.get_all_printers()[0]  # default seeded printer
+
+        order = _make_order()
+        item = _make_item(weight=100.0, qty=1)
+        item.printer_id = printer.id
+        item.estimated_time_minutes = 90
+        order.items = [item]
+        svc.save_order(order)
+
+        svc.update_status(order.id, "Ready")
+
+        refreshed_printer = printer_svc.get_printer(printer.id)
+        assert refreshed_printer.total_printed_grams == pytest.approx(100.0)
+        assert refreshed_printer.total_print_time_minutes == 90
+
+        refreshed_order = svc.get_order(order.id)
+        assert refreshed_order.items[0].is_printed is True
+
+    def test_ready_transition_is_idempotent(self, db):
+        from src.services.printer_service import PrinterService
+        printer_svc = PrinterService(db)
+        svc = OrderService(db, printer_service=printer_svc)
+
+        _seed_customer(db)
+        printer = printer_svc.get_all_printers()[0]
+
+        order = _make_order()
+        item = _make_item(weight=100.0, qty=1)
+        item.printer_id = printer.id
+        order.items = [item]
+        svc.save_order(order)
+
+        svc.update_status(order.id, "Ready")
+        svc.update_status(order.id, "Delivered")
+        svc.update_status(order.id, "Ready")   # back to Ready — must not double-count
+
+        refreshed_printer = printer_svc.get_printer(printer.id)
+        assert refreshed_printer.total_printed_grams == pytest.approx(100.0)
+
+    def test_no_printer_service_skips_recording_without_error(self, db):
+        svc = OrderService(db)  # no printer_service supplied (default None)
+        _seed_customer(db)
+
+        order = _make_order()
+        item = _make_item(weight=100.0, qty=1)
+        item.printer_id = "printer_default"
+        order.items = [item]
+        svc.save_order(order)
+
+        ok = svc.update_status(order.id, "Ready")
+        assert ok is True

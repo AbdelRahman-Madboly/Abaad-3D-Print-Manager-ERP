@@ -13,6 +13,7 @@ from src.core.config import (
     ELECTRICITY_RATE,
     NOZZLE_COST,
     NOZZLE_LIFETIME_GRAMS,
+    NOZZLE_WEAR_ALERT_PERCENT,
 )
 from src.core.models import Printer
 from src.utils.helpers import generate_id, now_str
@@ -214,3 +215,22 @@ class PrinterService:
                 2,
             ),
         }
+
+    # ------------------------------------------------------------------
+    # Dashboard — Action Center  (Phase 4)
+    # ------------------------------------------------------------------
+
+    def get_printers_needing_maintenance(self) -> List[Printer]:
+        """Return active printers whose nozzle wear needs attention.
+
+        "Active" is already enforced by ``get_all_printers()`` (the
+        underlying query filters ``is_active = 1``).
+
+        Returns:
+            Printers with
+            ``nozzle_usage_percent >= NOZZLE_WEAR_ALERT_PERCENT``.
+        """
+        return [
+            p for p in self.get_all_printers()
+            if p.nozzle_usage_percent >= NOZZLE_WEAR_ALERT_PERCENT
+        ]

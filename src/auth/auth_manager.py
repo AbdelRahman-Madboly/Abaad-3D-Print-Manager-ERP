@@ -84,8 +84,7 @@ class User:
             "printers":  Permission.VIEW_PRINTERS,
             "failures":  Permission.VIEW_FINANCIAL,
             "expenses":  Permission.VIEW_FINANCIAL,
-            "stats":     Permission.VIEW_STATISTICS,
-            "analytics": Permission.VIEW_STATISTICS,
+            "dashboard": Permission.VIEW_STATISTICS,
             "settings":  Permission.MANAGE_SETTINGS,
             "admin":     Permission.MANAGE_USERS,
         }

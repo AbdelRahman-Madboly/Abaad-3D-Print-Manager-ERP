@@ -132,6 +132,67 @@ class StatCard(tk.Frame):
 
 
 # ---------------------------------------------------------------------------
+# AlertCard
+# ---------------------------------------------------------------------------
+
+class AlertCard(tk.Frame):
+    """Compact clickable alert card for the Dashboard's Action Center.
+
+    Shows a title, a big count, and an optional subtitle. When ``count``
+    is 0 the card switches to a neutral/"all clear" style instead of being
+    hidden — absence of alerts is itself useful information.
+
+    Args:
+        parent:      Parent widget.
+        title:       Short label, e.g. ``"Low Filament"``.
+        count:       Number of items needing attention.
+        subtitle:    Optional secondary text (e.g. a breakdown or list of
+                     names/colors).
+        ok_text:     Text shown in place of "0" when there are no alerts
+                     (default: ``"All clear"``).
+        alert_color: Background color when ``count > 0``.
+        ok_color:    Background color when ``count == 0``.
+        on_click:    Callback invoked (no args) when the card is clicked.
+        width:       Minimum card width in pixels.
+        **kwargs:    Passed to ``tk.Frame``.
+
+    Example::
+
+        AlertCard(frame, "Low Filament", count=2, subtitle="Black, Red",
+                  on_click=lambda: on_navigate("filament"))
+    """
+
+    def __init__(self, parent, title: str, count: int, subtitle: str = "",
+                 ok_text: str = "All clear",
+                 alert_color: str = Colors.WARNING,
+                 ok_color: str = Colors.SUCCESS,
+                 on_click: Optional[Callable] = None,
+                 width: int = 200, **kwargs) -> None:
+        active = count > 0
+        bg = alert_color if active else ok_color
+
+        super().__init__(parent, bg=bg, padx=14, pady=10, width=width,
+                         cursor="hand2" if on_click else "arrow", **kwargs)
+
+        icon = "⚠️" if active else "✅"
+        tk.Label(self, text=f"{icon}  {title}", bg=bg, fg="white",
+                 font=Fonts.SMALL, anchor="w").pack(fill=tk.X)
+
+        value_text = str(count) if active else ok_text
+        tk.Label(self, text=value_text, bg=bg, fg="white",
+                 font=Fonts.BIG_NUMBER, anchor="w").pack(fill=tk.X)
+
+        if subtitle:
+            tk.Label(self, text=subtitle, bg=bg, fg="white",
+                     font=Fonts.TINY, anchor="w", justify="left",
+                     wraplength=width - 20).pack(fill=tk.X)
+
+        if on_click:
+            for widget in (self, *self.winfo_children()):
+                widget.bind("<Button-1>", lambda _e: on_click())
+
+
+# ---------------------------------------------------------------------------
 # ScrollableFrame
 # ---------------------------------------------------------------------------
 

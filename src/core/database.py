@@ -531,6 +531,60 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def get_print_items_totals(
+        self, statuses: Optional[List[str]] = None
+    ) -> Dict[str, float]:
+        """Aggregate effective weight (g) and time (min) across print_items.
+
+        "Effective" matches ``PrintItem.weight`` / ``PrintItem.time_minutes``:
+        actual value if recorded (> 0), otherwise the estimate — multiplied
+        by item quantity and summed across all items belonging to
+        non-deleted orders whose status is in *statuses*.
+
+        This is a single aggregate query (no N+1 per-order loop), used by
+        ``FinanceService.get_full_statistics()`` for
+        ``total_weight_printed`` / ``total_time_printed``.
+
+        Args:
+            statuses: Order statuses to include. Defaults to
+                ``("Delivered", "Ready", "In Progress")``.
+
+        Returns:
+            Dict with ``total_weight`` (float, grams) and ``total_time``
+            (float, minutes).
+        """
+        if statuses is None:
+            statuses = ["Delivered", "Ready", "In Progress"]
+        if not statuses:
+            return {"total_weight": 0.0, "total_time": 0.0}
+
+        placeholders = ", ".join(["?"] * len(statuses))
+        sql = f"""
+            SELECT
+                COALESCE(SUM(
+                    (CASE WHEN pi.actual_weight_grams > 0
+                          THEN pi.actual_weight_grams
+                          ELSE pi.estimated_weight_grams END) * pi.quantity
+                ), 0) AS total_weight,
+                COALESCE(SUM(
+                    (CASE WHEN pi.actual_time_minutes > 0
+                          THEN pi.actual_time_minutes
+                          ELSE pi.estimated_time_minutes END) * pi.quantity
+                ), 0) AS total_time
+            FROM print_items pi
+            JOIN orders o ON o.id = pi.order_id
+            WHERE o.is_deleted = 0 AND o.status IN ({placeholders})
+        """
+        conn = self._connect()
+        try:
+            row = conn.execute(sql, statuses).fetchone()
+            return {
+                "total_weight": float(row["total_weight"] or 0.0),
+                "total_time":   float(row["total_time"] or 0.0),
+            }
+        finally:
+            conn.close()
+
     # ------------------------------------------------------------------
     # Customers
     # ------------------------------------------------------------------

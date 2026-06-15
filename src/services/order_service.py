@@ -22,12 +22,13 @@ Pricing calculation chain (see calculate_totals):
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from src.core.config import (
     DEFAULT_COST_PER_GRAM,
     DEFAULT_RATE_PER_GRAM,
     ELECTRICITY_RATE,
+    ORDER_READY_ALERT_DAYS,
     TOLERANCE_THRESHOLD_GRAMS,
 )
 from src.core.models import Order, PrintItem
@@ -41,10 +42,17 @@ class OrderService:
 
     Args:
         db: A ``DatabaseManager`` instance (from ``src.core.database``).
+        printer_service: Optional ``PrinterService`` instance. When
+            provided, ``update_status()`` records completed print jobs
+            (grams/minutes/nozzle wear) on the assigned printer when an
+            order transitions to ``"Ready"`` (see Phase 4 notes on
+            ``update_status``). If ``None`` (default — preserves existing
+            call sites/tests), this tracking is simply skipped.
     """
 
-    def __init__(self, db) -> None:
+    def __init__(self, db, printer_service=None) -> None:
         self._db = db
+        self._printer_service = printer_service
 
     # ------------------------------------------------------------------
     # Retrieval
@@ -240,6 +248,14 @@ class OrderService:
         Allowed transitions are not enforced here — the UI should guard them.
         Timestamps ``confirmed_date`` and ``delivered_date`` are set automatically.
 
+        Phase 4: on transition to ``"Ready"`` (a print job is done), each
+        item with a ``printer_id`` assigned and not yet ``is_printed`` is
+        recorded on that printer via
+        ``PrinterService.record_print_job(printer_id, grams, minutes)`` —
+        if a ``printer_service`` was supplied to this ``OrderService`` — and
+        then marked ``is_printed = True`` so repeat transitions (e.g.
+        Ready → Delivered → Ready) don't double-count usage/nozzle wear.
+
         Args:
             order_id:   Target order ID.
             new_status: One of the ``ORDER_STATUSES`` string values.
@@ -258,6 +274,17 @@ class OrderService:
             order.confirmed_date = now_str()
         if new_status == "Delivered" and not order.delivered_date:
             order.delivered_date = now_str()
+
+        if new_status == "Ready" and self._printer_service is not None:
+            for item in order.items:
+                if item.printer_id and not item.is_printed:
+                    grams   = item.weight * item.quantity
+                    minutes = item.time_minutes * item.quantity
+                    if grams > 0 or minutes > 0:
+                        self._printer_service.record_print_job(
+                            item.printer_id, grams, minutes
+                        )
+                    item.is_printed = True
 
         return self._persist_order(order)
 
@@ -448,6 +475,44 @@ class OrderService:
             "created_date":  order.created_date[:10],
             "is_rd_project": order.is_rd_project,
         }
+
+    # ------------------------------------------------------------------
+    # Dashboard — Action Center  (Phase 4)
+    # ------------------------------------------------------------------
+
+    def get_orders_needing_attention(self) -> Dict[str, List[Order]]:
+        """Return orders that need admin attention (Dashboard Action Center).
+
+        Two categories (an order can appear in both):
+          - ``"ready_overdue"``: status is ``"Ready"`` and hasn't been
+            updated in more than ``ORDER_READY_ALERT_DAYS`` days — i.e. it's
+            been sitting, finished, uncollected.
+          - ``"payment_due"``: status is ``"Delivered"`` or ``"Ready"`` and
+            ``amount_received < total`` — an outstanding balance.
+
+        Returns:
+            Dict with keys ``"ready_overdue"`` and ``"payment_due"``, each
+            a list of ``Order`` objects (items not loaded).
+        """
+        now = datetime.now()
+        ready_overdue: List[Order] = []
+        payment_due:   List[Order] = []
+
+        for order in self.get_all_orders(include_deleted=False):
+            if order.status == "Ready":
+                try:
+                    updated  = datetime.strptime(order.updated_date, "%Y-%m-%d %H:%M:%S")
+                    age_days = (now - updated).total_seconds() / 86400
+                except (ValueError, TypeError):
+                    age_days = 0
+                if age_days > ORDER_READY_ALERT_DAYS:
+                    ready_overdue.append(order)
+
+            if order.status in ("Delivered", "Ready") and order.amount_received < order.total:
+                payment_due.append(order)
+
+        return {"ready_overdue": ready_overdue, "payment_due": payment_due}
+
 
     # ------------------------------------------------------------------
     # Private helpers

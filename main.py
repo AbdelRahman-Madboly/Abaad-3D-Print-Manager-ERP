@@ -9,8 +9,7 @@ Boot sequence
 1.  Bootstrap runtime directories
 2.  Open v5 SQLite database (singleton)
 3.  Initialise auth manager
-4.  First-run setup wizard (skipped if setup_complete == "1")
-5.  Login loop:
+4.  Login loop:
       show LoginDialog → on success build services and open App
       on window close / logout → loop back to login
       on dialog cancel → exit
@@ -40,32 +39,28 @@ def main() -> None:
     from src.auth.auth_manager import get_auth_manager
     auth = get_auth_manager()
     auth.initialise(db)
-
-    # 4. First-run setup wizard (no-op if already completed)
-    _wizard_root = tk.Tk()
-    _wizard_root.withdraw()
-    from src.ui.dialogs.setup_wizard import run_setup_wizard_if_needed
-    run_setup_wizard_if_needed(db, _wizard_root)
-    _wizard_root.destroy()
-
-    # 5. Login loop
+    # 4. Login loop
     while True:
         root = tk.Tk()
         root.withdraw()
 
         from src.ui.dialogs.login_dialog import LoginDialog
-        dlg  = LoginDialog(root, db=db)
-        user = dlg.result
+        user = LoginDialog(root).result
 
         if user is None:
             root.destroy()
             break                    # cancelled → exit
 
+        # Phase 4: PrinterService is built first and handed to OrderService
+        # so update_status() can record completed print jobs (nozzle wear,
+        # printed grams/minutes) when an order moves to "Ready".
+        printer_service = _svc("printer_service", "PrinterService", db)
         services = {
-            "order":     _svc("order_service",    "OrderService",     db),
+            "order":     _svc("order_service",    "OrderService",     db,
+                              printer_service=printer_service),
             "customer":  _svc("customer_service", "CustomerService",  db),
             "inventory": _svc("inventory_service","InventoryService", db),
-            "printer":   _svc("printer_service",  "PrinterService",   db),
+            "printer":   printer_service,
             "finance":   _svc("finance_service",  "FinanceService",   db),
         }
 
@@ -76,10 +71,10 @@ def main() -> None:
         # after mainloop returns (logout or close), loop back to login
 
 
-def _svc(module: str, cls: str, db):
+def _svc(module: str, cls: str, db, **kwargs):
     import importlib
     mod = importlib.import_module(f"src.services.{module}")
-    return getattr(mod, cls)(db)
+    return getattr(mod, cls)(db, **kwargs)
 
 
 if __name__ == "__main__":
