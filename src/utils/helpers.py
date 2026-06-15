@@ -1,12 +1,16 @@
 """
-src/utils/helpers.py  — v5.0  (drop-in replacement)
-====================================================
+src/utils/helpers.py  — v5.0  (Phase 2 update)
+===============================================
 All utility functions in one place.
 
-Added in v5:
-  format_time_minutes()  — alias for format_time() used by new tabs
-  safe_float / safe_int  — already existed
-  filament_length_to_grams — already existed
+Phase 2 changes:
+  - format_currency() now reads currency_symbol from the settings DB via
+    get_currency_symbol(), falling back to config.DEFAULT_SETTINGS default.
+    The symbol is cached per-process; call invalidate_currency_cache() after
+    the user changes it in Settings (the settings_tab _save_all already calls
+    on_status_change which refreshes the UI, so a restart picks up the new
+    symbol — this is acceptable for a desktop app).
+  - Callers that already pass an explicit symbol= arg are unaffected.
 """
 
 import math
@@ -14,7 +18,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from src.core.config import PAYMENT_FEES
+from src.core.config import PAYMENT_FEES, DEFAULT_SETTINGS
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +76,40 @@ format_time_minutes = format_time
 # Currency / Financial
 # ---------------------------------------------------------------------------
 
+# Module-level cache so we only hit the DB once per session.
+_currency_symbol_cache: Optional[str] = None
+
+
+def invalidate_currency_cache() -> None:
+    """Clear the cached currency symbol (call after settings are saved)."""
+    global _currency_symbol_cache
+    _currency_symbol_cache = None
+
+
+def get_currency_symbol() -> str:
+    """Return the configured currency symbol, reading from DB once then caching.
+
+    Design choice: we import DatabaseManager lazily (inside this function)
+    to avoid circular imports at module load time, and we cache the result
+    so subsequent calls to format_currency() are free.  The trade-off is
+    that a currency change only takes effect on the next process launch —
+    acceptable for a desktop ERP where settings changes are rare.
+    """
+    global _currency_symbol_cache
+    if _currency_symbol_cache is not None:
+        return _currency_symbol_cache
+
+    fallback = DEFAULT_SETTINGS.get("currency_symbol", "EGP")
+    try:
+        from src.core.database import get_database
+        db = get_database()
+        symbol = db.get_setting("currency_symbol", default=fallback)
+        _currency_symbol_cache = symbol or fallback
+    except Exception:
+        _currency_symbol_cache = fallback
+    return _currency_symbol_cache
+
+
 def calculate_payment_fee(amount: float, method: str) -> float:
     """Calculate payment-method transaction fee in EGP."""
     if amount <= 0:
@@ -84,8 +122,17 @@ def calculate_payment_fee(amount: float, method: str) -> float:
     return round(fee, 2)
 
 
-def format_currency(amount: float, symbol: str = "EGP") -> str:
-    """Format a float as a currency string, e.g. ``'1,250.50 EGP'``."""
+def format_currency(amount: float, symbol: Optional[str] = None) -> str:
+    """Format a float as a currency string, e.g. ``'1,250.50 EGP'``.
+
+    Args:
+        amount: Numeric value to format.
+        symbol: Override the currency symbol.  When omitted (None), the
+                symbol is read from the ``currency_symbol`` setting in the
+                database (cached after the first call).
+    """
+    if symbol is None:
+        symbol = get_currency_symbol()
     return f"{amount:,.2f} {symbol}"
 
 
