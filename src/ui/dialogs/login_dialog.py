@@ -3,14 +3,58 @@ src/ui/dialogs/login_dialog.py
 ==============================
 Login dialog for Abaad ERP v5.0.
 Shows on startup. Returns a User object on success or None on cancel.
+
+Phase 2 changes:
+  - Reads company_name / app_subtitle from settings (Tasks 3 & 4)
+  - Logo loaded from company_logo_path setting, falling back to LOGO_PATH
+  - Accepts optional db= kwarg so branding can be fetched before auth
+  - Shows a one-time "please change your password" prompt when default
+    admin credentials (admin / admin123) are used (Task 6)
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from pathlib import Path
 
 from src.auth.auth_manager import get_auth_manager
-from src.core.config import APP_TITLE, LOGO_PATH
+from src.core.config import APP_TITLE, LOGO_PATH, DEFAULT_SETTINGS
 from src.ui.theme import Colors, Fonts
+
+
+# Sentinel: password the default admin account ships with
+_DEFAULT_ADMIN_USER = "admin"
+_DEFAULT_ADMIN_PASS = "admin123"
+
+
+def _resolve_logo(db) -> Path:
+    """Return the effective logo path: custom setting → config fallback."""
+    if db is None:
+        return LOGO_PATH
+    try:
+        rel = db.get_setting("company_logo_path", default="")
+        if rel:
+            from src.core.config import PROJECT_ROOT
+            candidate = PROJECT_ROOT / rel
+            if candidate.exists():
+                return candidate
+    except Exception:
+        pass
+    return LOGO_PATH
+
+
+def _get_branding(db) -> tuple[str, str]:
+    """Return (company_name, app_subtitle) from settings with fallbacks."""
+    name     = DEFAULT_SETTINGS["company_name"]
+    subtitle = DEFAULT_SETTINGS["app_subtitle"]
+    if db is None:
+        return name, subtitle
+    try:
+        rows = db.get_all_settings()
+        name     = rows.get("company_name",  name)     or name
+        subtitle = rows.get("app_subtitle",  subtitle) or subtitle
+    except Exception:
+        pass
+    return name, subtitle
 
 
 class LoginDialog:
@@ -18,14 +62,16 @@ class LoginDialog:
 
     Args:
         parent: Root Tk window (should be withdrawn before showing this).
+        db:     Optional DatabaseManager for reading branding settings.
 
     Attributes:
         result: The authenticated User object, or None if cancelled.
     """
 
-    def __init__(self, parent: tk.Tk) -> None:
+    def __init__(self, parent: tk.Tk, db=None) -> None:
         self.result = None
         self._auth  = get_auth_manager()
+        self._db    = db
 
         self._win = tk.Toplevel(parent)
         self._win.title(APP_TITLE)
@@ -42,6 +88,9 @@ class LoginDialog:
     # ------------------------------------------------------------------
 
     def _build(self) -> None:
+        company_name, app_subtitle = _get_branding(self._db)
+        logo_path = _resolve_logo(self._db)
+
         outer = tk.Frame(self._win, bg=Colors.BG_DARK)
         outer.pack(fill=tk.BOTH, expand=True)
 
@@ -51,7 +100,7 @@ class LoginDialog:
 
         try:
             from PIL import Image, ImageTk
-            img = Image.open(str(LOGO_PATH)).resize((64, 64), Image.LANCZOS)
+            img = Image.open(str(logo_path)).resize((64, 64), Image.LANCZOS)
             self._logo = ImageTk.PhotoImage(img)
             tk.Label(header, image=self._logo,
                      bg=Colors.BG_DARK).pack()
@@ -59,9 +108,9 @@ class LoginDialog:
             tk.Label(header, text="🖨", font=("Segoe UI", 32),
                      bg=Colors.BG_DARK, fg="white").pack()
 
-        tk.Label(header, text="Abaad ERP", bg=Colors.BG_DARK, fg="white",
+        tk.Label(header, text=company_name, bg=Colors.BG_DARK, fg="white",
                  font=Fonts.TITLE).pack()
-        tk.Label(header, text="3D Printing Management System",
+        tk.Label(header, text=app_subtitle,
                  bg=Colors.BG_DARK, fg=Colors.TEXT_LIGHT,
                  font=Fonts.SMALL).pack()
 
@@ -116,13 +165,11 @@ class LoginDialog:
         login_btn.grid(row=7, column=0, sticky="ew")
 
         # Quick-access user buttons
-        users = self._auth.get_all_users() if self._auth.is_admin else []
-        if not users:
-            # pre-login: show quick-select if we can list them
-            try:
-                users = list(self._auth._users.values())
-            except Exception:
-                users = []
+        users = []
+        try:
+            users = list(self._auth._users.values())
+        except Exception:
+            pass
 
         if users:
             sep = ttk.Separator(card, orient="horizontal")
@@ -172,10 +219,24 @@ class LoginDialog:
         if ok:
             self.result = user
             self._win.destroy()
+            # Task 6: warn if default admin credentials were used
+            if (username.lower() == _DEFAULT_ADMIN_USER
+                    and password == _DEFAULT_ADMIN_PASS):
+                self._warn_default_password()
         else:
             self._error_lbl.config(text=f"⚠ {msg}")
             self._pass_var.set("")
             self._pass_entry.focus()
+
+    def _warn_default_password(self) -> None:
+        """Show a one-time warning to change the default admin password."""
+        messagebox.showwarning(
+            "⚠ Security Warning",
+            "You are logged in with the default administrator password.\n\n"
+            "Please change it immediately:\n"
+            "Settings tab → Change Password\n\n"
+            "Using the default password is a security risk.",
+        )
 
     def _cancel(self) -> None:
         self.result = None
