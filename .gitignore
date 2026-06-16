@@ -48,3 +48,6 @@ data/abaad_v4.db.json
 exports/
 *.log
 data/*.db
+
+# PyInstaller
+*.spec.bak
