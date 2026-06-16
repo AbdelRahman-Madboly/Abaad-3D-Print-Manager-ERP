@@ -11,23 +11,24 @@ Task 4.3 additions:
 """
 
 import tkinter as tk
-from tkinter import ttk
 from datetime import datetime
+from pathlib import Path
+from tkinter import ttk
 from typing import Optional
 
 from src.auth.auth_manager import User
 from src.auth.permissions import Permission
-from src.core.config import APP_TITLE, APP_VERSION, LOGO_PATH, ICON_PATH
-from src.ui.theme import Colors, Fonts, setup_styles
-
-from src.ui.tabs.orders_tab    import OrdersTab
+from src.core import config
+from src.core.config import APP_TITLE, APP_VERSION, ICON_PATH
 from src.ui.tabs.customers_tab import CustomersTab
-from src.ui.tabs.filament_tab  import FilamentTab
-from src.ui.tabs.printers_tab  import PrintersTab
-from src.ui.tabs.failures_tab  import FailuresTab
-from src.ui.tabs.expenses_tab  import ExpensesTab
 from src.ui.tabs.dashboard_tab import DashboardTab
-from src.ui.tabs.settings_tab  import SettingsTab
+from src.ui.tabs.expenses_tab import ExpensesTab
+from src.ui.tabs.failures_tab import FailuresTab
+from src.ui.tabs.filament_tab import FilamentTab
+from src.ui.tabs.orders_tab import OrdersTab
+from src.ui.tabs.printers_tab import PrintersTab
+from src.ui.tabs.settings_tab import SettingsTab
+from src.ui.theme import Colors, Fonts, setup_styles
 
 
 class App:
@@ -79,6 +80,33 @@ class App:
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     # ------------------------------------------------------------------
+    # Tenant helpers
+    # ------------------------------------------------------------------
+
+    def _get_tenant_name(self) -> str:
+        try:
+            return self._db.get_setting("company_name") or config.COMPANY["name"]
+        except Exception:
+            return config.COMPANY["name"]
+
+    def _get_tenant_subtitle(self) -> str:
+        try:
+            return self._db.get_setting("app_subtitle") or config.COMPANY["subtitle"]
+        except Exception:
+            return config.COMPANY["subtitle"]
+
+    def _resolve_logo(self) -> Path:
+        try:
+            path_str = self._db.get_setting("company_logo_path")
+            if path_str:
+                p = config.PROJECT_ROOT / path_str
+                if p.exists():
+                    return p
+        except Exception:
+            pass
+        return config.LOGO_PATH
+
+    # ------------------------------------------------------------------
     # Header bar
     # ------------------------------------------------------------------
 
@@ -88,15 +116,23 @@ class App:
 
         try:
             from PIL import Image, ImageTk
-            img = Image.open(str(LOGO_PATH)).resize((36, 36), Image.LANCZOS)
+            img = Image.open(str(self._resolve_logo())).resize((36, 36), Image.LANCZOS)
             self._logo_img = ImageTk.PhotoImage(img)
             tk.Label(hdr, image=self._logo_img,
                      bg=Colors.BG_DARK).pack(side=tk.LEFT, padx=(0, 8))
         except Exception:
             pass
 
-        tk.Label(hdr, text="Abaad ERP", bg=Colors.BG_DARK, fg="white",
-                 font=Fonts.TITLE).pack(side=tk.LEFT)
+        name_frame = tk.Frame(hdr, bg=Colors.BG_DARK)
+        name_frame.pack(side=tk.LEFT)
+        tk.Label(name_frame, text=self._get_tenant_name(),
+                 bg=Colors.BG_DARK, fg="white",
+                 font=Fonts.TITLE).pack(anchor="w")
+        subtitle = self._get_tenant_subtitle()
+        if subtitle:
+            tk.Label(name_frame, text=subtitle,
+                     bg=Colors.BG_DARK, fg=Colors.TEXT_LIGHT,
+                     font=Fonts.SMALL).pack(anchor="w")
         tk.Label(hdr, text=f"v{APP_VERSION}", bg=Colors.BG_DARK,
                  fg=Colors.TEXT_LIGHT, font=Fonts.SMALL).pack(
             side=tk.LEFT, padx=(4, 0), pady=(8, 0))
@@ -240,12 +276,12 @@ class App:
                                          fg=Colors.TEXT_LIGHT, font=Fonts.SMALL,
                                          padx=10)
         self._status_version = tk.Label(bar,
-                                         text=f"Abaad ERP v{APP_VERSION}",
+                                         text=APP_TITLE,
                                          bg=Colors.BG_DARK, fg=Colors.TEXT_MUTED,
                                          font=Fonts.SMALL, padx=10)
 
-        sep = lambda: tk.Label(bar, text="|", bg=Colors.BG_DARK,
-                                fg=Colors.BORDER_DARK)
+        def sep():
+            return tk.Label(bar, text="|", bg=Colors.BG_DARK, fg=Colors.BORDER_DARK)
 
         self._status_orders.pack(side=tk.LEFT)
         sep().pack(side=tk.LEFT)

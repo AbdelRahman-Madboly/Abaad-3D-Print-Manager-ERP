@@ -12,16 +12,15 @@ Features:
 """
 
 import tkinter as tk
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox, ttk
 from typing import Optional
 
 from src.auth.permissions import Permission
 from src.core.config import TRASH_THRESHOLD_GRAMS
 from src.services.inventory_service import InventoryService
+from src.ui.context_menu import bind_treeview_menu
 from src.ui.theme import Colors, Fonts
 from src.utils.helpers import format_currency
-from src.ui.context_menu import bind_treeview_menu
-
 
 
 class FilamentTab(ttk.Frame):

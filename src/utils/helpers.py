@@ -18,8 +18,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from src.core.config import PAYMENT_FEES, DEFAULT_SETTINGS
-
+from src.core.config import DEFAULT_SETTINGS, PAYMENT_FEES
 
 # ---------------------------------------------------------------------------
 # ID & Timestamp

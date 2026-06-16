@@ -17,10 +17,9 @@ Widgets:
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from src.ui.theme import Colors, Fonts
-
 
 # ---------------------------------------------------------------------------
 # SearchEntry

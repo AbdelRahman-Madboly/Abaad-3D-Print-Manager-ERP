@@ -8,16 +8,16 @@ the Phase 4 additions: ``record_print_job`` usage/nozzle tracking and
 ``get_printers_needing_maintenance`` (Dashboard Action Center).
 """
 
-import pytest
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.core.config import NOZZLE_WEAR_ALERT_PERCENT
 from src.core.database import DatabaseManager
 from src.services.printer_service import PrinterService
-from src.core.config import NOZZLE_WEAR_ALERT_PERCENT
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

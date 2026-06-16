@@ -16,9 +16,10 @@ git log --oneline -5
 
 # 3. Baseline test run — BEFORE touching any code
 pytest -q
+# Expected baseline: 190 passed / 1 skipped / 0 failed  (after Phase 2)
 
 # 4. Read today's phase prompt
-cat docs/phases/PHASE-N-PROMPT.md
+cat docs/phases/PHASE-3-PROMPT.md   # update number for current phase
 ```
 
 **Rule: never start coding without a green baseline.**
@@ -136,7 +137,7 @@ def get_orders_by_status(self, status: str) -> list[dict]:
     """
     with self._connect() as conn:
         rows = conn.execute(
-            "SELECT * FROM orders WHERE status = ? AND deleted = 0",
+            "SELECT * FROM orders WHERE status = ? AND is_deleted = 0",
             (status,),
         ).fetchall()
     return [dict(r) for r in rows]
@@ -201,20 +202,23 @@ tab_map = {
 
 ## File ownership by phase
 
-| File | Phase |
-|------|-------|
-| `src/core/config.py` | Phase 1 (missing keys), Phase 2 (neutralize COMPANY) |
-| `main.py` | Phase 1 (wire wizard) |
-| `src/ui/app.py` | Phase 1 (header), Phase 5 (icon), Phase 6 (window size) |
-| `src/ui/dialogs/setup_wizard.py` | Phase 2 (4-step wizard) |
-| `src/ui/theme.py` | Phase 5 (font fallback) |
-| `src/services/pdf_service.py` | Phase 7 (footer, tenant body) |
-| `src/ui/widgets.py` | Phase 6 (Tooltip, ScrollableFrame, empty_state_label) |
-| `.github/workflows/ci.yml` | Phase 4 |
-| `abaad-erp.desktop` | Phase 5 |
-| `scripts/install_linux.sh` | Phase 5 |
-| `abaad-erp.spec` | Phase 8 |
-| `Makefile` | Phase 8 |
+| File | Phase | Status |
+|------|-------|--------|
+| `src/core/config.py` | Phase 1 (missing DEFAULT_SETTINGS keys), Phase 2 (neutralize COMPANY dict) | ✅ done |
+| `main.py` | Phase 2 (wire setup wizard + pass services) | ✅ done |
+| `src/ui/app.py` | Phase 2 (header subtitle), Phase 5 (icon), Phase 6 (window size) | partial |
+| `src/ui/dialogs/setup_wizard.py` | Phase 2 (4-step wizard) | ✅ done |
+| `src/auth/auth_manager.py` | Phase 2 (replace print with logging) | ✅ done |
+| `src/ui/theme.py` | Phase 5 (font fallback chain) | pending |
+| `src/services/pdf_service.py` | Phase 7 (footer, tenant body, currency, default_cost_per_gram) | pending |
+| `src/ui/widgets.py` | Phase 6 (Tooltip, ScrollableFrame, empty_state_label) | pending |
+| `.github/workflows/ci.yml` | Phase 4 | pending |
+| `CHANGELOG.md` | Phase 4 | pending |
+| `docs/CONTRIBUTING.md` | Phase 4 | pending |
+| `abaad-erp.desktop` | Phase 5 | pending |
+| `scripts/install_linux.sh` | Phase 5 | pending |
+| `abaad-erp.spec` | Phase 8 | pending |
+| `Makefile` | Phase 8 | pending |
 
 ---
 
