@@ -23,8 +23,8 @@ cat docs/phases/PHASE-N-PROMPT.md         # today's tasks
 | 1 | Core Stabilization | ✅ Done | 76 passed / 1 skipped |
 | 2 | Tenant Brand System | ✅ Done | 190 passed / 1 skipped |
 | 3 | Dashboard & Analytics Verification | ✅ Done | 194 passed / 1 skipped |
-| 4 | Git Workflow & CI | **▶ Current** | starts at 194 / 1 skipped |
-| 5 | Launchers (Ubuntu + Windows) | ⏳ Pending | — |
+| 4 | Git Workflow & CI | ✅ Done | 194 passed / 1 skipped |
+| 5 | Launchers (Ubuntu + Windows) | **▶ Current** | starts at 194 / 1 skipped |
 | 6 | Cross-platform Polish & UI/UX | ⏳ Pending | — |
 | 7 | PDF Service Polish + Documentation | ⏳ Pending | — |
 | 8 | Packaging (PyInstaller) | ⏳ Pending | — |
@@ -71,8 +71,9 @@ docs/
     ├── PHASE-2-REPORT.md
     ├── PHASE-3-PROMPT.md      ✅ done
     ├── PHASE-3-REPORT.md
-    ├── PHASE-4-PROMPT.md      ← current phase
-    ├── PHASE-5-PROMPT.md
+    ├── PHASE-4-PROMPT.md      ✅ done
+    ├── PHASE-4-REPORT.md
+    ├── PHASE-5-PROMPT.md      ← current phase
     ├── PHASE-6-PROMPT.md
     ├── PHASE-7-PROMPT.md
     ├── PHASE-8-PROMPT.md
@@ -84,7 +85,7 @@ docs/
 
 ## Current phase
 
-**Phase 4 — Git Workflow & CI**
-See `docs/phases/PHASE-4-PROMPT.md`
+**Phase 5 — Launchers (Ubuntu + Windows)**
+See `docs/phases/PHASE-5-PROMPT.md`
 
 Test baseline entering this phase: **194 passed / 1 skipped / 0 failed**

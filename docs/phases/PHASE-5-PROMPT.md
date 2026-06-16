@@ -1,7 +1,7 @@
 # Phase 5 — Launchers (Ubuntu + Windows)
 > **Type:** tooling. Minimal app code changes (font/icon fixes only).
 > **Session start:** `cat docs/CLAUDE.md` then this file.
-> **Prerequisite:** Phase 4 complete, CI green.
+> **Prerequisite:** Phase 4 complete — `pytest -q` baseline is **194 passed / 1 skipped / 0 failed**. CI wired (verify Actions tab green on next push). Also fix `data/abaad_v5.db` gitignore at the start of this phase (carried from Phase 4).
 > **Branch:** `feature/phase-5-launchers` off `develop`
 
 ---
