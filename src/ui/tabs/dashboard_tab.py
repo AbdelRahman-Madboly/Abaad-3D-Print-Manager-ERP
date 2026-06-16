@@ -39,7 +39,7 @@ from src.services.inventory_service import InventoryService
 from src.services.order_service import OrderService
 from src.services.printer_service import PrinterService
 from src.ui.theme import Colors, Fonts
-from src.ui.widgets import AlertCard, ScrollableFrame, StatCard
+from src.ui.widgets import AlertCard, ScrollableFrame, StatCard, Tooltip
 from src.utils.helpers import format_currency, format_time_minutes
 
 # Matplotlib is optional — graceful degradation (same pattern as the
@@ -256,8 +256,10 @@ class DashboardTab(ttk.Frame):
                 parent, text=label, variable=self._period_var, value=value,
                 command=self._on_period_change,
             ).pack(side=tk.LEFT, padx=4)
-        ttk.Button(parent, text="🔄 Refresh",
-                   command=self.refresh).pack(side=tk.RIGHT)
+        _refresh_btn = ttk.Button(parent, text="🔄 Refresh",
+                                   command=self.refresh)
+        _refresh_btn.pack(side=tk.RIGHT)
+        Tooltip(_refresh_btn, "Reload all dashboard data")
 
     def _on_period_change(self) -> None:
         self._refresh_headline()
