@@ -292,15 +292,19 @@ class ScrollableTreeview(ttk.Frame):
 
     # Delegate common Treeview methods for convenience
     def insert(self, *args, **kwargs):
+        """Delegate to ``Treeview.insert``."""
         return self.tree.insert(*args, **kwargs)
 
     def delete(self, *args):
+        """Delegate to ``Treeview.delete``."""
         return self.tree.delete(*args)
 
     def get_children(self):
+        """Delegate to ``Treeview.get_children``."""
         return self.tree.get_children()
 
     def selection(self):
+        """Delegate to ``Treeview.selection``."""
         return self.tree.selection()
 
 
@@ -345,12 +349,15 @@ class FormRow(ttk.Frame):
         self.entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def get(self) -> str:
+        """Return the stripped string value of the entry."""
         return self.var.get().strip()
 
     def set(self, value: str) -> None:
+        """Set the entry value."""
         self.var.set(value)
 
     def focus(self) -> None:
+        """Move keyboard focus to the entry widget."""
         self.entry.focus_set()
 
 
@@ -386,6 +393,7 @@ class ActionButton(tk.Button):
         self.bind("<Leave>", lambda _: self.config(bg=self._color))
 
     def set_state(self, enabled: bool) -> None:
+        """Enable or disable the button."""
         self.config(state="normal" if enabled else "disabled")
 
 
