@@ -101,7 +101,8 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 5 | Launchers (Ubuntu .desktop + Windows) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 6 | Cross-platform polish (fonts, icons, UI/UX) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 7 | PDF service polish + code documentation | ✅ DONE — 199 passed / 1 skipped / 0 failed |
-| 8 | Packaging (PyInstaller) | **NEXT** |
+| 8 | Packaging (PyInstaller) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
+| 9 | Release prep (changelog, versioning, final QA) | **NEXT** |
 
 ---
 
