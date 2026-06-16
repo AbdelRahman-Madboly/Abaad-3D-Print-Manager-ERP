@@ -98,10 +98,10 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 2 | Tenant brand system (de-branding + full wizard) | ✅ DONE — 190 passed / 1 skipped / 0 failed |
 | 3 | Dashboard & analytics verification | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 4 | Git workflow, CI, version tagging | ✅ DONE — 194 passed / 1 skipped / 0 failed |
-| 5 | Launchers (Ubuntu .desktop + Windows) | **NEXT** |
+| 5 | Launchers (Ubuntu .desktop + Windows) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 6 | Cross-platform polish (fonts, icons, UI/UX) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 7 | PDF service polish + code documentation | ✅ DONE — 199 passed / 1 skipped / 0 failed |
-| 8 | Packaging (PyInstaller) | pending |
+| 8 | Packaging (PyInstaller) | **NEXT** |
 
 ---
 
