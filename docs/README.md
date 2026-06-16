@@ -22,8 +22,8 @@ cat docs/phases/PHASE-N-PROMPT.md         # today's tasks
 | 0 | Repo Audit & Honest Baseline | ✅ Done | — |
 | 1 | Core Stabilization | ✅ Done | 76 passed / 1 skipped |
 | 2 | Tenant Brand System | ✅ Done | 190 passed / 1 skipped |
-| 3 | Dashboard & Analytics Verification | **▶ Current** | starts at 190 / 1 skipped |
-| 4 | Git Workflow & CI | ⏳ Pending | — |
+| 3 | Dashboard & Analytics Verification | ✅ Done | 194 passed / 1 skipped |
+| 4 | Git Workflow & CI | **▶ Current** | starts at 194 / 1 skipped |
 | 5 | Launchers (Ubuntu + Windows) | ⏳ Pending | — |
 | 6 | Cross-platform Polish & UI/UX | ⏳ Pending | — |
 | 7 | PDF Service Polish + Documentation | ⏳ Pending | — |
@@ -69,8 +69,9 @@ docs/
     ├── PHASE-1-REPORT.md
     ├── PHASE-2-PROMPT.md      ✅ done
     ├── PHASE-2-REPORT.md
-    ├── PHASE-3-PROMPT.md      ← current phase
-    ├── PHASE-4-PROMPT.md
+    ├── PHASE-3-PROMPT.md      ✅ done
+    ├── PHASE-3-REPORT.md
+    ├── PHASE-4-PROMPT.md      ← current phase
     ├── PHASE-5-PROMPT.md
     ├── PHASE-6-PROMPT.md
     ├── PHASE-7-PROMPT.md
@@ -83,7 +84,7 @@ docs/
 
 ## Current phase
 
-**Phase 3 — Dashboard & Analytics Verification**
-See `docs/phases/PHASE-3-PROMPT.md`
+**Phase 4 — Git Workflow & CI**
+See `docs/phases/PHASE-4-PROMPT.md`
 
-Test baseline entering this phase: **190 passed / 1 skipped / 0 failed**
+Test baseline entering this phase: **194 passed / 1 skipped / 0 failed**
