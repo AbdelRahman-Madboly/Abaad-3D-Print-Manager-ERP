@@ -12,12 +12,15 @@ Bug C fix: _save_user_to_db() now calls self._db.save_user(dict)
 """
 
 import hashlib
+import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, Dict, List
 
 from src.auth.permissions import Permission, UserRole, ROLE_PERMISSIONS
+
+log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -183,9 +186,9 @@ class AuthManager:
         try:
             rows = self._db.get_all_users()          # ← Bug B fix
             self._users = {r["id"]: User.from_dict(r) for r in rows}
-            print(f"✓ Auth: loaded {len(self._users)} users from DB")
+            log.info("Auth: loaded %d users from DB", len(self._users))
         except Exception as exc:
-            print(f"✗ Auth: could not load users from DB — {exc}")
+            log.warning("Auth: could not load users from DB — %s", exc)
             self._load_from_json_fallback()
 
     def _load_from_json_fallback(self) -> None:
@@ -202,9 +205,9 @@ class AuthManager:
                 u = User.from_dict(u_data)
                 self._users[u.id] = u
             self._json_fallback_loaded = True
-            print(f"✓ Auth: loaded {len(self._users)} users from JSON fallback")
+            log.info("Auth: loaded %d users from JSON fallback", len(self._users))
         except Exception as exc:
-            print(f"✗ Auth: JSON fallback failed — {exc}")
+            log.warning("Auth: JSON fallback failed — %s", exc)
 
     def _save_user_to_db(self, user: User) -> bool:
         """Upsert a single user record into SQLite.
@@ -217,7 +220,7 @@ class AuthManager:
         try:
             return self._db.save_user(user.to_dict())   # ← Bug C fix
         except Exception as exc:
-            print(f"✗ Auth: save user failed — {exc}")
+            log.warning("Auth: save user failed — %s", exc)
             return False
 
     def _ensure_default_admin(self) -> None:
@@ -234,7 +237,7 @@ class AuthManager:
         admin.set_password("admin123")
         self._users[admin.id] = admin
         self._save_user_to_db(admin)
-        print("✓ Auth: created default admin (username: admin, password: admin123)")
+        log.info("Auth: default admin account created — change password on first login")
 
     # ------------------------------------------------------------------
     # Login / logout
@@ -345,7 +348,7 @@ class AuthManager:
             try:
                 self._db.delete_user(user_id)          # ← Bug C fix
             except Exception as exc:
-                print(f"✗ Auth: delete user DB error — {exc}")
+                log.warning("Auth: delete user DB error — %s", exc)
         return True, "User deleted."
 
     def get_all_users(self) -> List[User]:
