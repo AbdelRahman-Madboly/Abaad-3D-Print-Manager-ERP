@@ -1,18 +1,15 @@
-#!/bin/bash
-# Abaad 3D Print Manager v5.0 — Daily launcher (macOS / Linux)
+#!/usr/bin/env bash
+# Abaad ERP launcher
+# Run this directly: bash launch.sh
+# Or double-click if your file manager supports .sh execution
 
-# Locate the script's own directory so it works from any cwd
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 
-# Activate virtual environment
-if [ ! -f "venv/bin/activate" ]; then
-    echo "ERROR: Virtual environment not found."
-    echo "Please run ./setup.sh first."
-    exit 1
+if [ -f "$VENV_PYTHON" ]; then
+    exec "$VENV_PYTHON" "$SCRIPT_DIR/main.py" "$@"
+else
+    echo "⚠  No virtual environment found. Run: bash scripts/install_linux.sh"
+    echo "   Falling back to system python3..."
+    exec python3 "$SCRIPT_DIR/main.py" "$@"
 fi
-
-source venv/bin/activate
-
-# Launch the application
-python main.py
