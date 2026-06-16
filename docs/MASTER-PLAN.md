@@ -41,7 +41,7 @@ Stack: Python 3.10+ / Tkinter / SQLite / reportlab / Pillow / matplotlib
 
 ---
 
-## Honest current state (architect assessment, 2026-06-16)
+## Honest current state (updated 2026-06-16 after Phase 2)
 
 ### Architecture — correct and keep
 - Layer separation: tabs → services → DB is right
@@ -49,25 +49,27 @@ Stack: Python 3.10+ / Tkinter / SQLite / reportlab / Pillow / matplotlib
 - Models as dataclasses is right
 - Test structure (`:memory:` DB isolation) is right
 
-### What is actually verified working
-- Phase 1 (Stabilization): 76 passed / 1 skipped — confirmed in reports
-- Phase 4 (Dashboard): 114 passed / 1 skipped — confirmed in reports
-- `main.py`: clean, well-structured, Phase 4 printer wiring correct
+### What is verified working (Phases 0–2 complete)
+- Phase 0 (Audit): baseline established
+- Phase 1 (Stabilization): 76 passed / 1 skipped — confirmed
+- Phase 2 (Tenant brand): 190 passed / 1 skipped / 0 failed — confirmed
+- `config.py` DEFAULT_SETTINGS has all required keys; COMPANY dict is neutralized
+- `config.py` OLD_JSON_DB / OLD_USERS_JSON removed
+- `main.py` calls `run_setup_wizard_if_needed` with services; wizard fires on fresh DB
+- `app.py` header reads company name + subtitle from settings
+- `setup_wizard.py` is a 4-step wizard (company, filament, printer, cost defaults)
+- `auth_manager.py` uses `logging` — no credentials printed to stdout
 - All service files exist and follow the correct pattern
 
-### What is broken or was never completed
-- `config.py` `DEFAULT_SETTINGS` missing: `app_subtitle`, `currency_symbol`,
-  `company_logo_path`, `setup_complete`, `company_tagline`, `company_social`
-- `config.py` still contains `OLD_JSON_DB` / `OLD_USERS_JSON` (Phase 2 leftover)
-- `config.COMPANY` dict has real business contact info (phone, address, social)
-- `main.py` never calls `run_setup_wizard_if_needed` — wizard doesn't fire
-- `app.py` header hardcodes `"Abaad ERP"` literal instead of reading settings
-- `app.py` status bar hardcodes `"Abaad ERP v{APP_VERSION}"` instead of using `APP_TITLE`
-- Phase 2 (branding) is ~60% absent despite completion report claiming done
-- No CI/CD (no GitHub Actions)
-- No Ubuntu `.desktop` launcher
-- No `CHANGELOG.md`
-- `setup_wizard.py` exists but references keys not in `DEFAULT_SETTINGS` → crash on first run
+### What is not yet done / pending verification
+- Dashboard & analytics tests from old "Phase 4" work not formally re-verified (Phase 3 scope)
+- No CI/CD (no GitHub Actions) — Phase 4 scope
+- No Ubuntu `.desktop` launcher — Phase 5 scope
+- No `CHANGELOG.md` — Phase 4 scope
+- Font fallback for cross-platform rendering — Phase 5 scope
+- `data/abaad_v5.db` is tracked by git — Phase 4 scope (gitignore fix)
+- `generate_text_receipt()` hardcodes `"EGP"` — Phase 7 scope
+- `default_cost_per_gram` saved by wizard but not in DEFAULT_SETTINGS — Phase 7 scope
 
 ### What we are NOT doing
 - Docker (wrong tool for a Tkinter desktop app — needs display server)

@@ -112,6 +112,14 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
   The live DB must be gitignored. Fix in Phase 4.
 - `generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice (lines 145, 165).
   Fix in Phase 7 (PDF polish).
+- `default_cost_per_gram` is saved to the `settings` table by the wizard (Step 4) but is
+  **not** in `DEFAULT_SETTINGS`. Any service that reads it must call
+  `get_setting("default_cost_per_gram", default=str(config.DEFAULT_COST_PER_GRAM))`.
+  Likely consumer is Phase 7 (PDF / cost logic).
+- Wizard duplicate-spool guard: if the app crashes after Step 2 commits filament spools
+  but before Step 4 sets `setup_complete = "1"`, re-running the wizard will seed duplicate
+  spools. A future guard should check for existing spools before creating. Acceptable
+  for current scope; note for Phase 6 or later.
 
 ---
 
