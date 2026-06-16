@@ -45,9 +45,10 @@ desktop.ini
 
 # App-specific
 data/abaad_v4.db.json
+data/*.db
+data/users.json
 exports/
 *.log
-data/*.db
 
 # PyInstaller
 *.spec.bak
