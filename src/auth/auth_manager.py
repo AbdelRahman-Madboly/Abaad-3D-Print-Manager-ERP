@@ -70,6 +70,7 @@ class User:
 
     @property
     def permissions(self) -> List[Permission]:
+        """List of permissions granted to this user's role."""
         try:
             role_enum = UserRole(self.role)
         except ValueError:
@@ -77,9 +78,11 @@ class User:
         return ROLE_PERMISSIONS.get(role_enum, [])
 
     def has_permission(self, permission: Permission) -> bool:
+        """Return True if this user's role grants *permission*."""
         return permission in self.permissions
 
     def can_access_tab(self, tab_name: str) -> bool:
+        """Return True if this user may open the named tab."""
         tab_map: Dict[str, Permission] = {
             "orders":    Permission.VIEW_ORDER,
             "customers": Permission.VIEW_CUSTOMERS,
@@ -97,16 +100,20 @@ class User:
         return self.has_permission(required)
 
     def set_password(self, plain: str) -> None:
+        """Hash *plain* and store the digest + salt on this user."""
         self.password_hash, self.password_salt = _hash_password(plain)
 
     def check_password(self, plain: str) -> bool:
+        """Return True if *plain* matches the stored password hash."""
         return _verify_password(plain, self.password_hash, self.password_salt)
 
     def record_login(self) -> None:
+        """Update last_login timestamp and increment login_count."""
         self.last_login = _now_str()
         self.login_count += 1
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the users SQLite table."""
         return {
             "id":            self.id,
             "username":      self.username,
@@ -124,6 +131,7 @@ class User:
 
     @classmethod
     def from_dict(cls, data: dict) -> "User":
+        """Build a User from a SQLite row dict."""
         u = cls()
         u.id            = data.get("id", _generate_id())
         u.username      = data.get("username", "")
@@ -224,6 +232,7 @@ class AuthManager:
             return False
 
     def _ensure_default_admin(self) -> None:
+        """Create a default admin account if no admin exists in the DB."""
         admins = [u for u in self._users.values() if u.role == UserRole.ADMIN.value]
         if admins:
             return
@@ -244,6 +253,11 @@ class AuthManager:
     # ------------------------------------------------------------------
 
     def login(self, username: str, password: str) -> tuple[bool, str, Optional[User]]:
+        """Authenticate a user and start a session.
+
+        Returns:
+            Tuple of (success, message, User | None).
+        """
         if not self._users:
             self._load_from_json_fallback()
             self._ensure_default_admin()
@@ -267,6 +281,7 @@ class AuthManager:
         return True, f"Welcome, {name}!", user
 
     def logout(self) -> None:
+        """Clear the current session."""
         self._current_user = None
 
     # ------------------------------------------------------------------
@@ -275,20 +290,24 @@ class AuthManager:
 
     @property
     def current_user(self) -> Optional[User]:
+        """The currently logged-in User, or None if no session is active."""
         return self._current_user
 
     @property
     def is_logged_in(self) -> bool:
+        """True if a user session is currently active."""
         return self._current_user is not None
 
     @property
     def is_admin(self) -> bool:
+        """True if the current user has the Admin role."""
         return (
             self._current_user is not None
             and self._current_user.role == UserRole.ADMIN.value
         )
 
     def has_permission(self, permission: Permission) -> bool:
+        """Return True if the current user has *permission*."""
         if self._current_user is None:
             return False
         return self._current_user.has_permission(permission)
@@ -301,6 +320,11 @@ class AuthManager:
                     role: str = UserRole.USER.value,
                     display_name: str = "", email: str = "",
                     ) -> tuple[bool, str, Optional[User]]:
+        """Create a new user account (admin only).
+
+        Returns:
+            Tuple of (success, message, User | None).
+        """
         if not self.is_admin:
             return False, "Permission denied.", None
         if any(u.username.lower() == username.lower() for u in self._users.values()):
@@ -318,6 +342,10 @@ class AuthManager:
         return True, f"User '{username}' created.", user
 
     def update_user(self, user_id: str, **kwargs) -> tuple[bool, str]:
+        """Update editable fields on a user account (admin only).
+
+        Accepted kwargs: display_name, email, role, is_active, notes, password.
+        """
         if not self.is_admin:
             return False, "Permission denied."
         user = self._users.get(user_id)
@@ -332,6 +360,7 @@ class AuthManager:
         return True, "User updated."
 
     def delete_user(self, user_id: str) -> tuple[bool, str]:
+        """Delete a user account (admin only, guards against self-deletion and last admin)."""
         if not self.is_admin:
             return False, "Permission denied."
         user = self._users.get(user_id)
@@ -352,14 +381,17 @@ class AuthManager:
         return True, "User deleted."
 
     def get_all_users(self) -> List[User]:
+        """Return all user accounts (admin only — returns empty list otherwise)."""
         if not self.is_admin:
             return []
         return list(self._users.values())
 
     def get_user(self, user_id: str) -> Optional[User]:
+        """Return a User by ID, or None if not found."""
         return self._users.get(user_id)
 
     def change_password(self, old_password: str, new_password: str) -> tuple[bool, str]:
+        """Allow the current user to change their own password."""
         if not self._current_user:
             return False, "Not logged in."
         if not self._current_user.check_password(old_password):
@@ -377,6 +409,7 @@ _auth_manager: Optional[AuthManager] = None
 
 
 def get_auth_manager() -> AuthManager:
+    """Return the application-wide AuthManager singleton."""
     global _auth_manager
     if _auth_manager is None:
         _auth_manager = AuthManager()

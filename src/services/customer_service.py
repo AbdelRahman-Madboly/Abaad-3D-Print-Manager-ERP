@@ -28,10 +28,12 @@ class CustomerService:
     # ------------------------------------------------------------------
 
     def get_customer(self, customer_id: str) -> Optional[Customer]:
+        """Load a single customer by ID, or None if not found."""
         row = self._db.get_customer(customer_id)
         return Customer.from_dict(row) if row else None
 
     def get_all_customers(self) -> List[Customer]:
+        """Return all customers ordered by name."""
         return [Customer.from_dict(r) for r in self._db.get_all_customers()]
 
     def search(self, query: str) -> List[Customer]:
