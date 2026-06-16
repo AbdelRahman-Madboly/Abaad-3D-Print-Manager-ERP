@@ -191,8 +191,7 @@ def print_success() -> None:
         print(f"    {_BOLD}python main.py{_RESET}")
 
     print()
-    print(f"  Default login:  admin / admin123")
-    print(f"  {_YELLOW}⚠  Change the default password after first login!{_RESET}")
+    print(f"  {_YELLOW}⚠  Default admin account configured — change your password on first login.{_RESET}")
     print()
 
 

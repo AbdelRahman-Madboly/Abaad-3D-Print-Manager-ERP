@@ -17,8 +17,6 @@ PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent.parent
 
 DATA_DIR:    Path = PROJECT_ROOT / "data"
 DB_PATH:     Path = DATA_DIR    / "abaad_v5.db"
-OLD_JSON_DB: Path = DATA_DIR    / "abaad_v4.db.json"
-OLD_USERS_JSON: Path = DATA_DIR / "users.json"
 
 EXPORT_DIR:  Path = PROJECT_ROOT / "exports"
 BACKUP_DIR:  Path = DATA_DIR     / "backups"
@@ -95,13 +93,19 @@ DEFAULT_COLORS: list[str] = [
 ]
 
 DEFAULT_SETTINGS: dict = {
-    "company_name":       COMPANY["name"],
-    "company_phone":      COMPANY["phone"],
-    "company_address":    COMPANY["address"],
+    "company_name":          COMPANY["name"],
+    "company_phone":         COMPANY["phone"],
+    "company_address":       COMPANY["address"],
     "default_rate_per_gram": str(DEFAULT_RATE_PER_GRAM),
-    "next_order_number":  "1",
-    "deposit_percent":    "50",
-    "quote_validity_days": "7",
+    "next_order_number":     "1",
+    "deposit_percent":       "50",
+    "quote_validity_days":   "7",
+    "app_subtitle":          "3D Print Shop Management",
+    "currency_symbol":       "EGP",
+    "company_logo_path":     "",
+    "setup_complete":        "0",
+    "company_tagline":       COMPANY["tagline"],
+    "company_social":        COMPANY["social"],
 }
 
 # ---------------------------------------------------------------------------
