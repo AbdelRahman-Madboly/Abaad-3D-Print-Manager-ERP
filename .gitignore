@@ -47,3 +47,4 @@ desktop.ini
 data/abaad_v4.db.json
 exports/
 *.log
+data/*.db

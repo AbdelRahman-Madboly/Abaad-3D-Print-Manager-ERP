@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Abaad ERP
+GenericName=3D Print Shop Manager
+Comment=Manage orders, inventory, customers and finances for your 3D printing business
+Exec=bash -c "cd __REPO_DIR__ && __REPO_DIR__/.venv/bin/python main.py"
+Icon=__REPO_DIR__/assets/Abaad.png
+Terminal=false
+Categories=Office;Finance;
+Keywords=ERP;3D print;orders;inventory;
+StartupNotify=true
+StartupWMClass=abaad-erp
