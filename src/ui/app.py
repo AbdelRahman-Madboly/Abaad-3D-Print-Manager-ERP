@@ -10,6 +10,7 @@ Task 4.3 additions:
   • on_status_change callback now triggers the flash
 """
 
+import platform
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
@@ -73,11 +74,22 @@ class App:
             self._root.attributes("-zoomed", True)
         self._root.configure(bg=Colors.BG)
         self._root.minsize(1100, 650)
-        try:
-            self._root.iconbitmap(str(ICON_PATH))
-        except Exception:
-            pass
+        self._set_window_icon()
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _set_window_icon(self) -> None:
+        """Set window/taskbar icon — works on both Linux and Windows."""
+        try:
+            if platform.system() == "Windows":
+                self._root.iconbitmap(str(ICON_PATH))
+            else:
+                from PIL import Image, ImageTk
+                img = Image.open(str(config.ASSETS_DIR / "Abaad.png"))
+                photo = ImageTk.PhotoImage(img)
+                self._root.iconphoto(True, photo)
+                self._root._icon = photo  # keep reference to prevent GC
+        except Exception:
+            pass  # icon is cosmetic — never crash on this
 
     # ------------------------------------------------------------------
     # Tenant helpers
