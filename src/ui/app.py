@@ -90,6 +90,12 @@ class App:
         except Exception:
             return config.COMPANY["name"]
 
+    def _get_tenant_subtitle(self) -> str:
+        try:
+            return self._db.get_setting("app_subtitle") or config.COMPANY["subtitle"]
+        except Exception:
+            return config.COMPANY["subtitle"]
+
     def _resolve_logo(self) -> Path:
         try:
             path_str = self._db.get_setting("company_logo_path")
@@ -118,8 +124,16 @@ class App:
         except Exception:
             pass
 
-        tk.Label(hdr, text=self._get_tenant_name(), bg=Colors.BG_DARK, fg="white",
-                 font=Fonts.TITLE).pack(side=tk.LEFT)
+        name_frame = tk.Frame(hdr, bg=Colors.BG_DARK)
+        name_frame.pack(side=tk.LEFT)
+        tk.Label(name_frame, text=self._get_tenant_name(),
+                 bg=Colors.BG_DARK, fg="white",
+                 font=Fonts.TITLE).pack(anchor="w")
+        subtitle = self._get_tenant_subtitle()
+        if subtitle:
+            tk.Label(name_frame, text=subtitle,
+                     bg=Colors.BG_DARK, fg=Colors.TEXT_LIGHT,
+                     font=Fonts.SMALL).pack(anchor="w")
         tk.Label(hdr, text=f"v{APP_VERSION}", bg=Colors.BG_DARK,
                  fg=Colors.TEXT_LIGHT, font=Fonts.SMALL).pack(
             side=tk.LEFT, padx=(4, 0), pady=(8, 0))
