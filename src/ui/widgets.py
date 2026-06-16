@@ -21,7 +21,6 @@ from typing import Callable, Optional
 
 from src.ui.theme import Colors, Fonts
 
-
 # ---------------------------------------------------------------------------
 # empty_state_label
 # ---------------------------------------------------------------------------
