@@ -39,6 +39,18 @@ Common issues to expect and fix:
 - **Layout overflow:** long text (customer names, addresses) must wrap, not
   overflow off the page
 - **Missing page numbers:** add "Page N of M" to footer alongside credit
+- **Hardcoded currency:** `generate_text_receipt()` hardcodes `"EGP"` twice.
+  Replace with `db.get_setting("currency_symbol") or "EGP"`.
+- **`default_cost_per_gram` not in DEFAULT_SETTINGS:** the setup wizard (Phase 2)
+  saves this key to the `settings` table, but `DEFAULT_SETTINGS` in `config.py`
+  has no entry for it. Any cost-calculation code that reads this key must use:
+  ```python
+  cost = db.get_setting("default_cost_per_gram")
+  if cost is None:
+      cost = str(config.DEFAULT_COST_PER_GRAM)
+  ```
+  Add `"default_cost_per_gram": str(DEFAULT_COST_PER_GRAM)` to `DEFAULT_SETTINGS`
+  in `config.py` so all callers can rely on `get_setting()` returning a value.
 
 Footer pattern for reportlab:
 ```python

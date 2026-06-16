@@ -96,8 +96,8 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 0 | Repo audit & honest baseline | ✅ DONE |
 | 1 | Core stabilization | ✅ DONE — 165 passed / 1 skipped / 0 failed |
 | 2 | Tenant brand system (de-branding + full wizard) | ✅ DONE — 190 passed / 1 skipped / 0 failed |
-| 3 | Dashboard & analytics verification | **NEXT** |
-| 4 | Git workflow, CI, version tagging | pending |
+| 3 | Dashboard & analytics verification | ✅ DONE — 194 passed / 1 skipped / 0 failed |
+| 4 | Git workflow, CI, version tagging | **NEXT** |
 | 5 | Launchers (Ubuntu .desktop + Windows) | pending |
 | 6 | Cross-platform polish (fonts, icons, UI/UX) | pending |
 | 7 | PDF service polish + code documentation | pending |
@@ -112,6 +112,16 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
   The live DB must be gitignored. Fix in Phase 4.
 - `generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice (lines 145, 165).
   Fix in Phase 7 (PDF polish).
+- `src/ui/context_menu.py` may be dead code — `analytics_tab.py` (deleted in Phase 3)
+  was the only known importer. Verify in Phase 6 cross-platform audit before deleting.
+- `default_cost_per_gram` is saved to the `settings` table by the wizard (Step 4) but is
+  **not** in `DEFAULT_SETTINGS`. Any service that reads it must call
+  `get_setting("default_cost_per_gram", default=str(config.DEFAULT_COST_PER_GRAM))`.
+  Likely consumer is Phase 7 (PDF / cost logic).
+- Wizard duplicate-spool guard: if the app crashes after Step 2 commits filament spools
+  but before Step 4 sets `setup_complete = "1"`, re-running the wizard will seed duplicate
+  spools. A future guard should check for existing spools before creating. Acceptable
+  for current scope; note for Phase 6 or later.
 
 ---
 
