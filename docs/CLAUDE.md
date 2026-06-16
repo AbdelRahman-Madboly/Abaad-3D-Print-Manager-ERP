@@ -42,6 +42,7 @@ Abaad-3D-ERP/
 │   │   ├── tabs/       dashboard_tab.py, orders_tab.py, customers_tab.py,
 │   │   │               filament_tab.py, printers_tab.py, expenses_tab.py,
 │   │   │               failures_tab.py, settings_tab.py
+│   │   │               (stats_tab.py removed — replaced by dashboard_tab)
 │   │   ├── app.py      main window — header, notebook, status bar, shortcuts
 │   │   ├── theme.py    Colors, Fonts, setup_styles()
 │   │   └── widgets.py  StatCard, AlertCard, ScrollableFrame, …
@@ -53,13 +54,13 @@ Abaad-3D-ERP/
 │   ├── phases/         PHASE-N-PROMPT.md + PHASE-N-REPORT.md
 │   └── skills/         ABAAD-SKILL.md
 ├── assets/             Abaad.png, Print3D_Manager.ico
-├── data/               abaad_v5.db (gitignored), backups/
-├── scripts/            install_linux.sh, install_windows.bat
-├── main.py             entry point only — boot sequence, < 60 lines
+├── data/               abaad_v5.db (must be gitignored — see Phase 4), backups/
+├── scripts/            install.py (cross-platform venv setup)
+├── main.py             entry point only — boot sequence, 80 lines
 ├── pyproject.toml
 ├── launch.sh           Linux launcher
 ├── Launch_App.bat      Windows launcher
-└── abaad-erp.desktop   Ubuntu .desktop entry (template)
+└── abaad-erp.desktop   Ubuntu .desktop entry (Phase 5 deliverable — not yet created)
 ```
 
 ---
@@ -84,8 +85,7 @@ Abaad-3D-ERP/
 ## DB abstraction rule (for future Postgres migration)
 
 All SQL lives in `DatabaseManager` typed methods. Services never build SQL strings.
-This means a future `PostgresDatabaseManager` just reimplements the same method
-signatures — services and tests change nothing.
+The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 
 ---
 
@@ -93,16 +93,25 @@ signatures — services and tests change nothing.
 
 | # | Name | Status |
 |---|------|--------|
-| 0 | Repo audit & honest baseline | **NEXT** |
-| 1 | Core stabilization (DB layer, settings, tests green) | pending |
-| 2 | Tenant brand system (de-branding + first-run wizard) | pending |
-| 3 | Dashboard & analytics (verify Phase 4 work) | pending |
+| 0 | Repo audit & honest baseline | ✅ DONE |
+| 1 | Core stabilization | ✅ DONE — 165 passed / 1 skipped / 0 failed |
+| 2 | Tenant brand system (de-branding + full wizard) | ✅ DONE — 190 passed / 1 skipped / 0 failed |
+| 3 | Dashboard & analytics verification | **NEXT** |
 | 4 | Git workflow, CI, version tagging | pending |
 | 5 | Launchers (Ubuntu .desktop + Windows) | pending |
-| 6 | Cross-platform polish (fonts, icons) | pending |
-| 7 | PDF service (tenant body + Abaad footer) | pending |
-| 8 | Documentation (architecture, user, developer) | pending |
-| 9 | Packaging (PyInstaller, both OSes) | pending |
+| 6 | Cross-platform polish (fonts, icons, UI/UX) | pending |
+| 7 | PDF service polish + code documentation | pending |
+| 8 | Packaging (PyInstaller) | pending |
+
+---
+
+## Known issues carried forward
+
+- ~~`auth_manager.py` line ~237 prints `admin / admin123` to stdout~~ — fixed in Phase 2.
+- `data/abaad_v5.db` is tracked by git (`.gitignore` only excludes the old v4 JSON).
+  The live DB must be gitignored. Fix in Phase 4.
+- `generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice (lines 145, 165).
+  Fix in Phase 7 (PDF polish).
 
 ---
 
@@ -112,14 +121,18 @@ signatures — services and tests change nothing.
 cd ~/projects/products/Abaad-3D-ERP
 
 # Run the app
-python main.py
+python3 main.py
 
-# Run tests (always from repo root)
-pytest -q
+# Run tests (always from repo root, using conda base or venv with pytest)
+python3 -m pytest -q
 
 # Run a single test file
-pytest tests/test_order_service.py -v
+python3 -m pytest tests/test_order_service.py -v
 ```
+
+**Dev environment note:** no venv exists yet (Phase 5 adds it). Run tests
+with `python3 -m pytest` using the conda base env which has pytest installed.
+After Phase 5, use `.venv/bin/python -m pytest`.
 
 ---
 
@@ -130,6 +143,7 @@ main      → production only, tagged vX.Y.Z, never commit directly
 develop   → integration branch, all work lands here via PR
 feature/* → one branch per phase/task, off develop
 fix/*     → bug fixes
+chore/*   → tooling, CI, deps
 ```
 
 ```bash
@@ -140,15 +154,8 @@ git add -A && git commit -m "feat(scope): description"
 git push -u origin feature/phase-N-name
 gh pr create --base develop --fill
 gh pr merge --merge --delete-branch
+git checkout develop && git pull
 ```
 
 **Commit format** (Conventional Commits):
 `fix` / `feat` / `refactor` / `chore` / `docs` / `test` / `remove`
-Example: `fix(config): add missing DEFAULT_SETTINGS keys`
-
----
-
-## Dev machine
-
-Ubuntu 24.04, Dell G15 5530, RTX 4050 Laptop, Python 3.12 system / 3.13 conda base.
-See `~/dev-docs/device-spec.md` for full spec.
