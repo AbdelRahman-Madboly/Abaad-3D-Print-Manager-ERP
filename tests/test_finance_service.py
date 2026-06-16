@@ -1,8 +1,8 @@
 """
 tests/test_finance_service.py
 ==============================
-Tests for the analytics aggregation methods on FinanceService used by
-AnalyticsTab: get_monthly_revenue, get_order_status_breakdown,
+Tests for FinanceService analytics aggregation methods used by DashboardTab:
+get_full_statistics, get_monthly_revenue, get_order_status_breakdown,
 get_expenses_by_category, and get_filament_usage_by_color.
 """
 
@@ -16,6 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.core.database import DatabaseManager
 from src.services.finance_service import FinanceService
 from src.services.order_service import OrderService
+from src.services.printer_service import PrinterService
+from src.core.models import Order, PrintItem
 
 
 # ---------------------------------------------------------------------------
@@ -35,6 +37,23 @@ def fin(db):
 @pytest.fixture
 def order_svc(db):
     return OrderService(db)
+
+
+@pytest.fixture
+def printer_svc(db):
+    return PrinterService(db)
+
+
+def _seed_customer(db, name="Alice") -> str:
+    import uuid
+    cid = str(uuid.uuid4())[:8]
+    db.save_customer({
+        "id": cid, "name": name, "phone": "", "email": "", "address": "",
+        "notes": "", "discount_percent": 0.0, "total_orders": 0,
+        "total_spent": 0.0, "created_date": "2024-01-01 00:00:00",
+        "updated_date": "2024-01-01 00:00:00",
+    })
+    return cid
 
 
 def _make_order(order_svc, customer, created_date, status, items):
@@ -199,3 +218,91 @@ class TestGetFilamentUsageByColor:
 
     def test_empty_db_returns_empty_list(self, fin):
         assert fin.get_filament_usage_by_color("2024-01-01", "2024-12-31") == []
+
+
+# ---------------------------------------------------------------------------
+# get_full_statistics  (Phase 3 verification — total_weight/time non-zero)
+# ---------------------------------------------------------------------------
+
+class TestGetFullStatistics:
+
+    def test_empty_db_returns_zero_weight_and_time(self, db, fin):
+        stats = fin.get_full_statistics()
+        assert stats["total_weight"] == 0.0
+        assert stats["total_print_time"] == 0
+
+    def test_weight_and_time_are_non_zero_after_ready_transition(
+        self, db, fin, printer_svc
+    ):
+        """Transitioning an order to Ready triggers record_print_job,
+        which should make total_weight and total_print_time non-zero."""
+        order_svc = OrderService(db, printer_service=printer_svc)
+        _seed_customer(db)
+        printer = printer_svc.get_all_printers()[0]
+
+        order = Order()
+        order.order_number = 1
+        order.customer_name = "Alice"
+        order.payment_method = "Cash"
+        item = PrintItem()
+        item.name = "Bracket"
+        item.estimated_weight_grams = 150.0
+        item.quantity = 1
+        item.rate_per_gram = 4.0
+        item.estimated_time_minutes = 90
+        item.printer_id = printer.id
+        order.items = [item]
+        order_svc.save_order(order)
+        order_svc.update_status(order.id, "Ready")
+
+        stats = fin.get_full_statistics()
+        assert stats["total_weight"] == pytest.approx(150.0)
+        assert stats["total_print_time"] == 90
+
+    def test_weight_accumulates_across_multiple_orders(self, db, fin, printer_svc):
+        order_svc = OrderService(db, printer_service=printer_svc)
+        _seed_customer(db)
+        printer = printer_svc.get_all_printers()[0]
+
+        for i, grams in enumerate([100.0, 50.0], start=1):
+            order = Order()
+            order.order_number = i
+            order.customer_name = "Alice"
+            order.payment_method = "Cash"
+            item = PrintItem()
+            item.name = "Part"
+            item.estimated_weight_grams = grams
+            item.quantity = 1
+            item.rate_per_gram = 4.0
+            item.estimated_time_minutes = 30
+            item.printer_id = printer.id
+            order.items = [item]
+            order_svc.save_order(order)
+            order_svc.update_status(order.id, "Ready")
+
+        stats = fin.get_full_statistics()
+        assert stats["total_weight"] == pytest.approx(150.0)
+        assert stats["total_print_time"] == 60
+
+    def test_cancelled_orders_excluded_from_weight(self, db, fin, printer_svc):
+        order_svc = OrderService(db, printer_service=printer_svc)
+        _seed_customer(db)
+        printer = printer_svc.get_all_printers()[0]
+
+        order = Order()
+        order.order_number = 1
+        order.customer_name = "Alice"
+        order.payment_method = "Cash"
+        item = PrintItem()
+        item.name = "Part"
+        item.estimated_weight_grams = 200.0
+        item.quantity = 1
+        item.rate_per_gram = 4.0
+        item.estimated_time_minutes = 60
+        item.printer_id = printer.id
+        order.items = [item]
+        order_svc.save_order(order)
+        order_svc.update_status(order.id, "Cancelled")
+
+        stats = fin.get_full_statistics()
+        assert stats["total_weight"] == 0.0

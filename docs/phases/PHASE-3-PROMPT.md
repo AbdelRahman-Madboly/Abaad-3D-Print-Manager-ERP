@@ -1,7 +1,7 @@
 # Phase 3 — Dashboard & Analytics Verification
 > **Type:** verify + fix. No new features unless something is broken.
 > **Session start:** `cat docs/CLAUDE.md` then this file.
-> **Prerequisite:** Phase 2 complete, all tests green.
+> **Prerequisite:** Phase 2 complete — `pytest -q` baseline is **190 passed / 1 skipped / 0 failed**.
 > **Branch:** `fix/phase-3-dashboard-verify` off `develop`
 
 ---
