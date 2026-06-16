@@ -73,7 +73,8 @@ class App:
         except tk.TclError:
             self._root.attributes("-zoomed", True)
         self._root.configure(bg=Colors.BG)
-        self._root.minsize(1100, 650)
+        self._root.minsize(1100, 700)
+        self._root.geometry("1280x800")
         self._set_window_icon()
         self._root.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -291,6 +292,11 @@ class App:
                                          text=APP_TITLE,
                                          bg=Colors.BG_DARK, fg=Colors.TEXT_MUTED,
                                          font=Fonts.SMALL, padx=10)
+        user_text = (f"👤 {self._user.display_name or self._user.username}"
+                     f" ({self._user.role})")
+        self._status_user = tk.Label(bar, text=user_text,
+                                      bg=Colors.BG_DARK, fg=Colors.TEXT_LIGHT,
+                                      font=Fonts.SMALL, padx=10)
 
         def sep():
             return tk.Label(bar, text="|", bg=Colors.BG_DARK, fg=Colors.BORDER_DARK)
@@ -303,6 +309,8 @@ class App:
             self._status_revenue.pack(side=tk.LEFT)
             sep().pack(side=tk.LEFT)
         self._status_saved.pack(side=tk.LEFT)
+        self._status_user.pack(side=tk.RIGHT, padx=(0, 4))
+        sep().pack(side=tk.RIGHT)
         self._status_version.pack(side=tk.RIGHT)
         self._status_clock.pack(side=tk.RIGHT)
 
