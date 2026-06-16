@@ -16,8 +16,6 @@ from typing import Dict, List, Optional
 from src.core.config import (
     DEFAULT_COST_PER_GRAM,
     ELECTRICITY_RATE,
-    EXPENSE_CATEGORIES,
-    FAILURE_REASONS,
 )
 from src.core.models import Expense, PrintFailure, Statistics
 from src.utils.helpers import generate_id, now_str, today_str
@@ -344,7 +342,7 @@ class FinanceService:
         Returns:
             A fully-populated ``Statistics`` dataclass.
         """
-        from src.core.models import Order, Printer, FilamentSpool
+        from src.core.models import FilamentSpool, Order, Printer
 
         stats = Statistics()
 

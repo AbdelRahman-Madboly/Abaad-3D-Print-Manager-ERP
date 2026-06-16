@@ -15,14 +15,17 @@ from tkinter import messagebox, ttk
 from typing import Optional
 
 from src.auth.permissions import Permission
-from src.core.config import (FAILURE_REASONS, FAILURE_SOURCES,
-                              ELECTRICITY_RATE, DEFAULT_COST_PER_GRAM)
+from src.core.config import (
+    DEFAULT_COST_PER_GRAM,
+    ELECTRICITY_RATE,
+    FAILURE_REASONS,
+    FAILURE_SOURCES,
+)
 from src.services.finance_service import FinanceService
 from src.services.inventory_service import InventoryService
+from src.ui.context_menu import bind_treeview_menu
 from src.ui.theme import Colors, Fonts
 from src.utils.helpers import format_currency, format_time_minutes, safe_float
-from src.ui.context_menu import bind_treeview_menu
-
 
 
 class FailuresTab(ttk.Frame):
@@ -401,8 +404,6 @@ class _FailureDialog:
             return
         g    = safe_float(self._filament_var.get())
         min_ = safe_float(self._time_var.get())
-        mat  = g * DEFAULT_COST_PER_GRAM
-        elec = (min_ / 60) * ELECTRICITY_RATE
 
         spool_id = None
         if self._deduct_var.get():

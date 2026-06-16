@@ -16,14 +16,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.auth.auth_manager import User
 from src.core.database import DatabaseManager
 from src.core.models import Order, PrintItem
-from src.services.finance_service import FinanceService
 from src.services.customer_service import CustomerService
+from src.services.finance_service import FinanceService
 from src.services.inventory_service import InventoryService
-from src.services.printer_service import PrinterService
 from src.services.order_service import OrderService
-from src.auth.auth_manager import User
+from src.services.printer_service import PrinterService
 from src.ui.theme import Colors
 
 try:

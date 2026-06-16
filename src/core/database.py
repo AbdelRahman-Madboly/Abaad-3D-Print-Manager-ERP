@@ -17,7 +17,6 @@ Features:
 """
 
 import csv
-import json
 import logging
 import shutil
 import sqlite3

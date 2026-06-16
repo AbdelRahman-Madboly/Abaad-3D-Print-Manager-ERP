@@ -31,7 +31,6 @@ from src.core.config import (
 )
 from src.utils.helpers import calculate_payment_fee, generate_id, now_str
 
-
 # ---------------------------------------------------------------------------
 # PrintSettings  (value object — no separate table, flattened into print_items)
 # ---------------------------------------------------------------------------
