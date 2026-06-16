@@ -34,6 +34,7 @@ from src.core.config import (
     DEFAULT_SETTINGS,
     EXPORT_DIR,
     LOGO_PATH,
+    PDF_FOOTER_CREDIT,
     PROJECT_ROOT,
 )
 
@@ -129,6 +130,7 @@ class PdfService:
     def generate_text_receipt(self, order) -> str:
         """Return a plain-text receipt string for WhatsApp copy-paste."""
         c = self._load_company()
+        cur = c.get("currency_symbol", "EGP")
         lines = [
             f"*{c['name']} — {c['subtitle']}*",
             f"📍 {c['address']}  📞 {c['phone']}",
@@ -150,12 +152,12 @@ class PdfService:
             r = item.rate_per_gram
             t = item.print_cost
             lines.append(f"  • {item.name} ({item.color})  "
-                          f"{w:.0f}g × {q} × {r:.2f} = {t:.2f} EGP")
+                          f"{w:.0f}g × {q} × {r:.2f} = {t:.2f} {cur}")
 
         lines.append("─" * 34)
 
         def _row(label: str, value: float, prefix: str = ""):
-            lines.append(f"{prefix}{label}: {value:.2f} EGP")
+            lines.append(f"{prefix}{label}: {value:.2f} {cur}")
 
         _row("Base Total (4 EGP/g)", order.subtotal)
         if order.discount_amount > 0.005:
@@ -170,7 +172,7 @@ class PdfService:
             _row("🚚 Shipping", order.shipping_cost, "+ ")
         if order.payment_fee > 0.005:
             _row(f"Fee ({order.payment_method})", order.payment_fee, "+ ")
-        lines.append(f"*TOTAL: {order.total:.2f} EGP*")
+        lines.append(f"*TOTAL: {order.total:.2f} {cur}*")
         if order.amount_received > 0.005:
             _row("✓ Received", order.amount_received)
             change = order.amount_received - order.total
@@ -226,9 +228,30 @@ class PdfService:
         elements += self._sec_totals(order, styles, company, is_quote=is_quote)
         elements += self._sec_footer(order, styles, company, is_quote=is_quote)
 
-        doc.build(elements)
+        doc.build(
+            elements,
+            onFirstPage=self._draw_footer,
+            onLaterPages=self._draw_footer,
+        )
         log.info("PDF saved: %s", output_path)
         return str(output_path)
+
+    def _draw_footer(self, canvas, doc) -> None:
+        """Draw credit and page number at the bottom of every page."""
+        canvas.saveState()
+        canvas.setFont("Helvetica", 8)
+        canvas.setFillColorRGB(0.5, 0.5, 0.5)
+        canvas.drawString(
+            doc.leftMargin,
+            0.5 * 72,  # 0.5 inch from bottom edge
+            PDF_FOOTER_CREDIT,
+        )
+        canvas.drawRightString(
+            doc.pagesize[0] - doc.rightMargin,
+            0.5 * 72,
+            f"Page {doc.page}",
+        )
+        canvas.restoreState()
 
     # ------------------------------------------------------------------
     # Company settings

@@ -1,10 +1,8 @@
 """
 tests/test_pdf_service.py
 ==========================
-Tests for PdfService — currently focused on _load_company(), which reads
-saved company / quote settings from the ``settings`` table so generated
-PDFs and text receipts reflect what the user configured in the Settings
-tab (rather than always falling back to the hardcoded COMPANY dict).
+Tests for PdfService — covers _load_company() settings resolution and
+the full PDF generation pipeline (quote, receipt, footer, logo fallback).
 """
 
 import sys
@@ -14,9 +12,33 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.core.config import COMPANY
+from src.core.config import COMPANY, PDF_FOOTER_CREDIT
 from src.core.database import DatabaseManager
+from src.core.models import Order, PrintItem
 from src.services.pdf_service import PdfService
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _make_order(company_name: str = "Acme 3D") -> Order:
+    """Return a minimal order with one item, ready for PDF generation."""
+    o = Order()
+    o.order_number   = 42
+    o.customer_name  = "Test Customer"
+    o.customer_phone = "01000000000"
+    o.status         = "Ready"
+    o.payment_method = "Cash"
+
+    item = PrintItem()
+    item.name                   = "Test Bracket"
+    item.estimated_weight_grams = 50.0
+    item.quantity               = 1
+    item.rate_per_gram          = 4.0
+    item.estimated_time_minutes = 60
+    o.items = [item]
+    o.calculate_totals()
+    return o
 
 
 @pytest.fixture
@@ -76,3 +98,88 @@ class TestLoadCompany:
         assert company["name"]  == "Only Name Set"
         assert company["phone"] == COMPANY["phone"]
         assert company["deposit_pct"] == 50
+
+
+# ---------------------------------------------------------------------------
+# PDF generation tests (require reportlab + pypdf)
+# ---------------------------------------------------------------------------
+
+rl_required = pytest.mark.skipif(
+    not PdfService.is_available(), reason="reportlab not installed"
+)
+
+try:
+    import importlib.util
+    _pypdf_ok = importlib.util.find_spec("pypdf") is not None
+except Exception:
+    _pypdf_ok = False
+
+pypdf_required = pytest.mark.skipif(not _pypdf_ok, reason="pypdf not installed")
+
+
+def _extract_pdf_text(path: str) -> str:
+    """Read all text from a PDF file using pypdf."""
+    import pypdf
+    reader = pypdf.PdfReader(path)
+    return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
+@rl_required
+class TestPdfGeneration:
+
+    @pytest.fixture
+    def db(self):
+        d = DatabaseManager(":memory:")
+        d.save_all_settings({
+            "company_name":    "Acme 3D Printing",
+            "company_phone":   "0123456789",
+            "company_address": "Cairo, Egypt",
+        })
+        return d
+
+    def test_quote_generates_without_error(self, db, tmp_path):
+        """Quote generator produces a non-empty PDF bytes file."""
+        svc  = PdfService(db)
+        order = _make_order()
+        out  = tmp_path / "quote.pdf"
+        path = svc.generate_quote(order, output_path=out)
+        assert Path(path).exists()
+        assert Path(path).stat().st_size > 0
+
+    def test_receipt_generates_without_error(self, db, tmp_path):
+        """Receipt generator produces a non-empty PDF file."""
+        svc  = PdfService(db)
+        order = _make_order()
+        out  = tmp_path / "receipt.pdf"
+        path = svc.generate_receipt(order, output_path=out)
+        assert Path(path).exists()
+        assert Path(path).stat().st_size > 0
+
+    @pypdf_required
+    def test_pdf_contains_company_name(self, db, tmp_path):
+        """Company name configured in settings appears in the generated PDF."""
+        svc  = PdfService(db)
+        order = _make_order()
+        path = svc.generate_receipt(order, output_path=tmp_path / "r.pdf")
+        text = _extract_pdf_text(path)
+        assert "Acme 3D Printing" in text
+
+    @pypdf_required
+    def test_pdf_footer_credit(self, db, tmp_path):
+        """PDF_FOOTER_CREDIT text appears in every generated PDF."""
+        svc  = PdfService(db)
+        order = _make_order()
+        path = svc.generate_receipt(order, output_path=tmp_path / "r.pdf")
+        text = _extract_pdf_text(path)
+        assert PDF_FOOTER_CREDIT in text
+
+    def test_pdf_fallback_when_no_logo(self, tmp_path):
+        """PDF generation does not crash when company_logo_path is empty."""
+        db = DatabaseManager(":memory:")
+        db.save_setting("company_logo_path", "")
+        svc  = PdfService(db)
+        order = _make_order()
+        out  = tmp_path / "no_logo.pdf"
+        # Must not raise
+        path = svc.generate_receipt(order, output_path=out)
+        assert Path(path).exists()

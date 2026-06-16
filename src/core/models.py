@@ -46,6 +46,7 @@ class PrintSettings:
     scale_ratio:     float = 1.0
 
     def to_dict(self) -> dict:
+        """Return settings as a plain dict for embedding in a PrintItem dict."""
         return {
             "nozzle_size":    self.nozzle_size,
             "layer_height":   self.layer_height,
@@ -56,6 +57,7 @@ class PrintSettings:
 
     @classmethod
     def from_dict(cls, data: dict) -> "PrintSettings":
+        """Build a PrintSettings from a flat dict using safe defaults."""
         return cls(
             nozzle_size    = float(data.get("nozzle_size",    DEFAULT_NOZZLE)),
             layer_height   = float(data.get("layer_height",   DEFAULT_LAYER_HEIGHT)),
@@ -65,6 +67,7 @@ class PrintSettings:
         )
 
     def __str__(self) -> str:
+        """Return a human-readable summary of the slicer settings."""
         parts = [f"{self.nozzle_size}mm nozzle", f"{self.layer_height}mm layers"]
         if self.support_type != "None":
             parts.append(self.support_type)
@@ -115,6 +118,7 @@ class PrintItem:
 
     @property
     def total_weight(self) -> float:
+        """Effective weight multiplied by quantity."""
         return self.weight * self.quantity
 
     @property
@@ -257,6 +261,7 @@ class Customer:
     updated_date:     str   = field(default_factory=now_str)
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the customers SQLite table."""
         return {
             "id":               self.id,
             "name":             self.name,
@@ -273,6 +278,7 @@ class Customer:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Customer":
+        """Build a Customer from a SQLite row dict."""
         c = cls()
         c.id               =       data.get("id", generate_id())
         c.name             =       data.get("name", "")
@@ -348,14 +354,17 @@ class Order:
 
     @property
     def item_count(self) -> int:
+        """Total number of individual prints across all items."""
         return sum(i.quantity for i in self.items)
 
     @property
     def total_weight(self) -> float:
+        """Total effective weight (g) across all items × quantities."""
         return sum(i.total_weight for i in self.items)
 
     @property
     def total_time(self) -> int:
+        """Total effective print time (minutes) across all items × quantities."""
         return sum(i.time_minutes * i.quantity for i in self.items)
 
     @property
@@ -365,6 +374,7 @@ class Order:
 
     @property
     def is_confirmed(self) -> bool:
+        """True if the order is past the Draft/Quote stage."""
         return self.status in ("Confirmed", "In Progress", "Ready", "Delivered")
 
     # ------------------------------------------------------------------
@@ -382,6 +392,7 @@ class Order:
         self.calculate_totals()
 
     def get_item(self, item_id: str) -> Optional[PrintItem]:
+        """Return the first PrintItem matching *item_id*, or None."""
         for i in self.items:
             if i.id == item_id:
                 return i
@@ -594,10 +605,12 @@ class FilamentSpool:
 
     @property
     def used_weight_grams(self) -> float:
+        """Grams consumed since the spool was purchased."""
         return self.initial_weight_grams - self.current_weight_grams
 
     @property
     def remaining_percent(self) -> float:
+        """Remaining filament as a percentage of the initial weight."""
         if self.initial_weight_grams <= 0:
             return 0.0
         return (self.current_weight_grams / self.initial_weight_grams) * 100
@@ -613,10 +626,12 @@ class FilamentSpool:
 
     @property
     def display_name(self) -> str:
+        """Human-readable label: custom name if set, else brand/type/color."""
         return self.name if self.name else f"{self.brand} {self.filament_type} {self.color}"
 
     @property
     def should_show_trash_button(self) -> bool:
+        """True when the spool is nearly empty and not already in trash."""
         return (
             self.current_weight_grams < TRASH_THRESHOLD_GRAMS
             and self.status != "trash"
@@ -668,6 +683,7 @@ class FilamentSpool:
     # ------------------------------------------------------------------
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the filament_spools SQLite table."""
         return {
             "id":                   self.id,
             "name":                 self.name or self.display_name,
@@ -688,6 +704,7 @@ class FilamentSpool:
 
     @classmethod
     def from_dict(cls, data: dict) -> "FilamentSpool":
+        """Build a FilamentSpool from a SQLite row dict."""
         s = cls()
         s.id                   =       data.get("id", generate_id())
         s.name                 =       data.get("name", "")
@@ -733,22 +750,27 @@ class Printer:
 
     @property
     def depreciation_per_gram(self) -> float:
+        """Printer cost allocated per gram printed (purchase price / lifetime grams)."""
         return self.purchase_price / (self.lifetime_kg * 1000)
 
     @property
     def total_depreciation(self) -> float:
+        """Cumulative depreciation cost based on total grams printed."""
         return self.total_printed_grams * self.depreciation_per_gram
 
     @property
     def total_electricity_cost(self) -> float:
+        """Cumulative electricity cost based on total print time."""
         return (self.total_print_time_minutes / 60) * self.electricity_rate_per_hour
 
     @property
     def total_nozzle_cost(self) -> float:
+        """Cumulative nozzle replacement cost."""
         return self.nozzle_changes * self.nozzle_cost
 
     @property
     def nozzle_usage_percent(self) -> float:
+        """Current nozzle wear as a percentage of its expected lifetime."""
         if self.nozzle_lifetime_grams <= 0:
             return 0.0
         return (self.current_nozzle_grams / self.nozzle_lifetime_grams) * 100
@@ -763,6 +785,7 @@ class Printer:
             self.current_nozzle_grams -= self.nozzle_lifetime_grams
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the printers SQLite table."""
         return {
             "id":                        self.id,
             "name":                      self.name,
@@ -783,6 +806,7 @@ class Printer:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Printer":
+        """Build a Printer from a SQLite row dict."""
         p = cls()
         p.id                        =       data.get("id", generate_id())
         p.name                      =       data.get("name", "HIVE 0.1")
@@ -822,6 +846,7 @@ class FilamentHistory:
     reason:           str   = ""
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the filament_history SQLite table."""
         return {
             "id":               self.id,
             "spool_id":         self.spool_id,
@@ -837,6 +862,7 @@ class FilamentHistory:
 
     @classmethod
     def from_dict(cls, data: dict) -> "FilamentHistory":
+        """Build a FilamentHistory from a SQLite row dict."""
         h = cls()
         h.id               =       data.get("id", generate_id())
         h.spool_id         =       data.get("spool_id", "")
@@ -891,6 +917,7 @@ class PrintFailure:
         self.total_loss       = self.filament_cost + self.electricity_cost
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the print_failures SQLite table."""
         return {
             "id":                    self.id,
             "date":                  self.date,
@@ -916,6 +943,7 @@ class PrintFailure:
 
     @classmethod
     def from_dict(cls, data: dict) -> "PrintFailure":
+        """Build a PrintFailure from a SQLite row dict."""
         f = cls()
         f.id                    =       data.get("id", generate_id())
         f.date                  =       data.get("date", now_str())
@@ -966,6 +994,7 @@ class Expense:
         self.total_cost = self.amount * self.quantity
 
     def to_dict(self) -> dict:
+        """Return a flat dict compatible with the expenses SQLite table."""
         return {
             "id":               self.id,
             "date":             self.date,
@@ -983,6 +1012,7 @@ class Expense:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Expense":
+        """Build an Expense from a SQLite row dict."""
         e = cls()
         e.id               =       data.get("id", generate_id())
         e.date             =       data.get("date", now_str())
@@ -1059,18 +1089,21 @@ class Statistics:
 
     @property
     def profit_margin(self) -> float:
+        """Net profit as a percentage of total revenue."""
         if self.total_revenue <= 0:
             return 0.0
         return (self.total_profit / self.total_revenue) * 100
 
     @property
     def gross_margin(self) -> float:
+        """Gross profit as a percentage of total revenue."""
         if self.total_revenue <= 0:
             return 0.0
         return (self.gross_profit / self.total_revenue) * 100
 
     @property
     def total_production_costs(self) -> float:
+        """Sum of material, electricity, depreciation, and nozzle costs."""
         return (
             self.total_material_cost
             + self.total_electricity_cost
@@ -1080,4 +1113,5 @@ class Statistics:
 
     @property
     def total_costs(self) -> float:
+        """All costs: production + failure losses + business expenses."""
         return self.total_production_costs + self.total_failure_cost + self.total_expenses

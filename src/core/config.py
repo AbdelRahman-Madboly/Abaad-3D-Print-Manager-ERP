@@ -98,6 +98,7 @@ DEFAULT_SETTINGS: dict = {
     "company_phone":         COMPANY["phone"],
     "company_address":       COMPANY["address"],
     "default_rate_per_gram": str(DEFAULT_RATE_PER_GRAM),
+    "default_cost_per_gram": str(DEFAULT_COST_PER_GRAM),
     "next_order_number":     "1",
     "deposit_percent":       "50",
     "quote_validity_days":   "7",
