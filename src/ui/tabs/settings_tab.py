@@ -93,6 +93,10 @@ class SettingsTab(ttk.Frame):
         canvas.bind_all(
             "<MouseWheel>",
             lambda e: canvas.yview_scroll(-1*(e.delta//120), "units"))
+        canvas.bind_all(
+            "<Button-4>", lambda e: canvas.yview_scroll(-1, "units"))
+        canvas.bind_all(
+            "<Button-5>", lambda e: canvas.yview_scroll(1, "units"))
 
         self._build_company_section()
         self._build_pricing_section()
