@@ -408,3 +408,183 @@ class TestBrandingSourceChecks:
                 "src" / "ui" / "dialogs" / "setup_wizard.py").read_text()
         assert "setup_complete" in text
         assert '"1"' in text   # saves "1" on completion
+
+
+# ---------------------------------------------------------------------------
+# 10. config.py COMPANY dict — neutralized, no real contact info
+# ---------------------------------------------------------------------------
+
+class TestNeutralizedCompany:
+    def test_no_real_phone(self):
+        from src.core.config import COMPANY
+        assert COMPANY["phone"] == "", "COMPANY['phone'] must be empty (was real number)"
+
+    def test_no_real_address(self):
+        from src.core.config import COMPANY
+        assert COMPANY["address"] == "", "COMPANY['address'] must be empty (was Ismailia)"
+
+    def test_no_real_social(self):
+        from src.core.config import COMPANY
+        assert COMPANY["social"] == "", "COMPANY['social'] must be empty (was @abaad3d)"
+
+    def test_name_is_generic(self):
+        from src.core.config import COMPANY
+        assert COMPANY["name"] == "My 3D Print Shop"
+
+    def test_grep_no_ismailia(self):
+        """src/ and main.py must not contain 'Ismailia' (tests/ excluded
+        because test assertions mention the old value by name)."""
+        import subprocess
+        result = subprocess.run(
+            ["grep", "-rn", "Ismailia", "src/", "main.py",
+             "--include=*.py"],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).parent.parent),
+        )
+        assert result.stdout.strip() == ""
+
+    def test_grep_no_real_phone(self):
+        """src/ and main.py must not contain the old phone number."""
+        import subprocess
+        result = subprocess.run(
+            ["grep", "-rn", "01070750477", "src/", "main.py",
+             "--include=*.py"],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).parent.parent),
+        )
+        assert result.stdout.strip() == ""
+
+    def test_grep_no_abaad3d_handle(self):
+        """src/ and main.py must not contain the old social handle."""
+        import subprocess
+        result = subprocess.run(
+            ["grep", "-rn", "@abaad3d", "src/", "main.py",
+             "--include=*.py"],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).parent.parent),
+        )
+        assert result.stdout.strip() == ""
+
+
+# ---------------------------------------------------------------------------
+# 11. PDF_FOOTER_CREDIT constant
+# ---------------------------------------------------------------------------
+
+class TestPdfFooterCredit:
+    def test_constant_exists(self):
+        from src.core import config
+        assert hasattr(config, "PDF_FOOTER_CREDIT")
+
+    def test_value_is_product_credit(self):
+        from src.core.config import PDF_FOOTER_CREDIT
+        assert "Abaad ERP" in PDF_FOOTER_CREDIT
+        assert "Generated" in PDF_FOOTER_CREDIT
+
+
+# ---------------------------------------------------------------------------
+# 12. auth_manager.py — no plain-text credential print
+# ---------------------------------------------------------------------------
+
+class TestAuthManagerNoCredentialPrint:
+    _SRC = (Path(__file__).parent.parent /
+            "src" / "auth" / "auth_manager.py")
+
+    def test_no_print_with_password(self):
+        text = self._SRC.read_text()
+        for line in text.splitlines():
+            if "print(" in line and "admin123" in line:
+                raise AssertionError(
+                    f"auth_manager.py still prints credentials: {line.strip()}"
+                )
+
+    def test_uses_log_for_admin_creation(self):
+        text = self._SRC.read_text()
+        assert "log.info" in text or "log.warning" in text, \
+            "auth_manager.py must use logging instead of print()"
+
+    def test_log_module_imported(self):
+        text = self._SRC.read_text()
+        assert "import logging" in text
+
+
+# ---------------------------------------------------------------------------
+# 13. Wizard — 4-step structure (source inspection)
+# ---------------------------------------------------------------------------
+
+class TestWizardFourSteps:
+    _SRC = (Path(__file__).parent.parent /
+            "src" / "ui" / "dialogs" / "setup_wizard.py")
+
+    def test_four_step_constant(self):
+        text = self._SRC.read_text()
+        assert "_TOTAL_STEPS = 4" in text or "TOTAL_STEPS = 4" in text
+
+    def test_all_four_build_methods_present(self):
+        text = self._SRC.read_text()
+        for n in range(1, 5):
+            assert f"def _build_step_{n}" in text, \
+                f"_build_step_{n}() missing from setup_wizard.py"
+
+    def test_show_step_method_present(self):
+        text = self._SRC.read_text()
+        assert "def _show_step" in text
+
+    def test_signature_accepts_services(self):
+        """run_setup_wizard_if_needed must accept inventory_service + printer_service."""
+        text = self._SRC.read_text()
+        assert "inventory_service" in text
+        assert "printer_service" in text
+
+    def test_back_and_next_buttons_present(self):
+        text = self._SRC.read_text()
+        assert "_go_back" in text
+        assert "_go_next" in text
+
+    def test_skip_step_present(self):
+        text = self._SRC.read_text()
+        assert "_skip_step" in text
+
+    def test_finish_method_present(self):
+        text = self._SRC.read_text()
+        assert "def _finish" in text
+
+
+# ---------------------------------------------------------------------------
+# 14. app.py — subtitle method present
+# ---------------------------------------------------------------------------
+
+class TestAppSubtitle:
+    _SRC = (Path(__file__).parent.parent / "src" / "ui" / "app.py")
+
+    def test_get_tenant_subtitle_method(self):
+        text = self._SRC.read_text()
+        assert "_get_tenant_subtitle" in text
+
+    def test_subtitle_reads_app_subtitle_key(self):
+        text = self._SRC.read_text()
+        assert "app_subtitle" in text
+
+    def test_subtitle_used_in_header(self):
+        text = self._SRC.read_text()
+        assert "get_tenant_subtitle" in text or "_get_tenant_subtitle" in text
+
+
+# ---------------------------------------------------------------------------
+# 15. main.py — passes db= to LoginDialog and services to wizard
+# ---------------------------------------------------------------------------
+
+class TestMainPy:
+    _SRC = Path(__file__).parent.parent / "main.py"
+
+    def test_login_dialog_receives_db(self):
+        text = self._SRC.read_text()
+        assert "LoginDialog(root, db=db)" in text, \
+            "main.py must pass db=db to LoginDialog"
+
+    def test_wizard_receives_inventory_service(self):
+        text = self._SRC.read_text()
+        assert "inventory_service=" in text
+
+    def test_wizard_receives_printer_service(self):
+        text = self._SRC.read_text()
+        assert "printer_service=" in text
