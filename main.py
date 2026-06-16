@@ -40,7 +40,11 @@ def main() -> None:
     wizard_root = tk.Tk()                               # 4. First-run wizard
     wizard_root.withdraw()
     from src.ui.dialogs.setup_wizard import run_setup_wizard_if_needed
-    run_setup_wizard_if_needed(db, wizard_root)
+    _inv_svc = _svc("inventory_service", "InventoryService", db)
+    _prt_svc = _svc("printer_service",  "PrinterService",  db)
+    run_setup_wizard_if_needed(db, wizard_root,
+                               inventory_service=_inv_svc,
+                               printer_service=_prt_svc)
     wizard_root.destroy()
 
     while True:                                         # 5. Login loop
@@ -48,7 +52,7 @@ def main() -> None:
         root.withdraw()
 
         from src.ui.dialogs.login_dialog import LoginDialog
-        user = LoginDialog(root).result
+        user = LoginDialog(root, db=db).result
 
         if user is None:
             root.destroy()
