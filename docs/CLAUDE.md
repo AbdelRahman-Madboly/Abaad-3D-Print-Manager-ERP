@@ -97,8 +97,8 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 1 | Core stabilization | ✅ DONE — 165 passed / 1 skipped / 0 failed |
 | 2 | Tenant brand system (de-branding + full wizard) | ✅ DONE — 190 passed / 1 skipped / 0 failed |
 | 3 | Dashboard & analytics verification | ✅ DONE — 194 passed / 1 skipped / 0 failed |
-| 4 | Git workflow, CI, version tagging | **NEXT** |
-| 5 | Launchers (Ubuntu .desktop + Windows) | pending |
+| 4 | Git workflow, CI, version tagging | ✅ DONE — 194 passed / 1 skipped / 0 failed |
+| 5 | Launchers (Ubuntu .desktop + Windows) | **NEXT** |
 | 6 | Cross-platform polish (fonts, icons, UI/UX) | pending |
 | 7 | PDF service polish + code documentation | pending |
 | 8 | Packaging (PyInstaller) | pending |
@@ -109,7 +109,7 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 
 - ~~`auth_manager.py` line ~237 prints `admin / admin123` to stdout~~ — fixed in Phase 2.
 - `data/abaad_v5.db` is tracked by git (`.gitignore` only excludes the old v4 JSON).
-  The live DB must be gitignored. Fix in Phase 4.
+  The live DB must be gitignored. Carry into Phase 5 (missed from Phase 4 task list).
 - `generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice (lines 145, 165).
   Fix in Phase 7 (PDF polish).
 - `src/ui/context_menu.py` may be dead code — `analytics_tab.py` (deleted in Phase 3)
