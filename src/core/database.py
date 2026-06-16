@@ -338,9 +338,11 @@ class DatabaseManager:
             conn.close()
 
     def _row_to_dict(self, row: Optional[sqlite3.Row]) -> Optional[dict]:
+        """Convert a single sqlite3.Row to a plain dict, or None if row is None."""
         return dict(row) if row else None
 
     def _rows_to_list(self, rows: List[sqlite3.Row]) -> List[dict]:
+        """Convert a list of sqlite3.Row objects to a list of plain dicts."""
         return [dict(r) for r in rows]
 
     def _init_db(self) -> None:
@@ -602,6 +604,7 @@ class DatabaseManager:
             return False
 
     def get_customer(self, customer_id: str) -> Optional[dict]:
+        """Fetch a single customer by ID."""
         conn = self._connect()
         try:
             row = conn.execute(
@@ -612,6 +615,7 @@ class DatabaseManager:
             conn.close()
 
     def get_all_customers(self) -> List[dict]:
+        """Fetch all customers ordered by name."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -635,6 +639,7 @@ class DatabaseManager:
             conn.close()
 
     def delete_customer(self, customer_id: str) -> bool:
+        """Permanently delete a customer record."""
         try:
             with self._transaction() as conn:
                 conn.execute("DELETE FROM customers WHERE id=?", (customer_id,))
@@ -648,6 +653,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_spool(self, spool: dict) -> bool:
+        """Insert or replace a filament spool record."""
         cols = ", ".join(spool.keys())
         placeholders = ", ".join(["?"] * len(spool))
         sql = f"INSERT OR REPLACE INTO filament_spools ({cols}) VALUES ({placeholders})"
@@ -660,6 +666,7 @@ class DatabaseManager:
             return False
 
     def get_spool(self, spool_id: str) -> Optional[dict]:
+        """Fetch a single filament spool by ID."""
         conn = self._connect()
         try:
             row = conn.execute(
@@ -670,6 +677,7 @@ class DatabaseManager:
             conn.close()
 
     def get_all_spools(self) -> List[dict]:
+        """Fetch all filament spools ordered by purchase date descending."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -680,6 +688,7 @@ class DatabaseManager:
             conn.close()
 
     def get_active_spools(self) -> List[dict]:
+        """Fetch non-trash active spools with remaining filament."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -694,6 +703,7 @@ class DatabaseManager:
             conn.close()
 
     def get_spools_by_color(self, color: str) -> List[dict]:
+        """Fetch active non-trash spools of a specific color, heaviest first."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -711,6 +721,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_printer(self, printer: dict) -> bool:
+        """Insert or replace a printer record."""
         cols = ", ".join(printer.keys())
         placeholders = ", ".join(["?"] * len(printer))
         sql = f"INSERT OR REPLACE INTO printers ({cols}) VALUES ({placeholders})"
@@ -723,6 +734,7 @@ class DatabaseManager:
             return False
 
     def get_all_printers(self) -> List[dict]:
+        """Fetch all active printers ordered by name."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -737,6 +749,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_failure(self, failure: dict) -> bool:
+        """Insert or replace a print failure record."""
         cols = ", ".join(failure.keys())
         placeholders = ", ".join(["?"] * len(failure))
         sql = f"INSERT OR REPLACE INTO print_failures ({cols}) VALUES ({placeholders})"
@@ -749,6 +762,7 @@ class DatabaseManager:
             return False
 
     def get_all_failures(self) -> List[dict]:
+        """Fetch all print failure records ordered by date descending."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -759,6 +773,7 @@ class DatabaseManager:
             conn.close()
 
     def delete_failure(self, failure_id: str) -> bool:
+        """Permanently delete a print failure record."""
         try:
             with self._transaction() as conn:
                 conn.execute(
@@ -774,6 +789,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_expense(self, expense: dict) -> bool:
+        """Insert or replace an expense record."""
         cols = ", ".join(expense.keys())
         placeholders = ", ".join(["?"] * len(expense))
         sql = f"INSERT OR REPLACE INTO expenses ({cols}) VALUES ({placeholders})"
@@ -786,6 +802,7 @@ class DatabaseManager:
             return False
 
     def get_all_expenses(self) -> List[dict]:
+        """Fetch all expense records ordered by date descending."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -796,6 +813,7 @@ class DatabaseManager:
             conn.close()
 
     def delete_expense(self, expense_id: str) -> bool:
+        """Permanently delete an expense record."""
         try:
             with self._transaction() as conn:
                 conn.execute("DELETE FROM expenses WHERE id=?", (expense_id,))
@@ -809,6 +827,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def get_setting(self, key: str, default: Any = None) -> Any:
+        """Return the value for a settings key, or *default* if not found."""
         conn = self._connect()
         try:
             row = conn.execute(
@@ -819,6 +838,7 @@ class DatabaseManager:
             conn.close()
 
     def save_setting(self, key: str, value: Any) -> bool:
+        """Upsert a single key/value pair in the settings table."""
         try:
             with self._transaction() as conn:
                 conn.execute(
@@ -831,6 +851,7 @@ class DatabaseManager:
             return False
 
     def get_all_settings(self) -> dict:
+        """Return all settings as a ``{key: value}`` dict."""
         conn = self._connect()
         try:
             rows = conn.execute("SELECT key, value FROM settings").fetchall()
@@ -839,6 +860,7 @@ class DatabaseManager:
             conn.close()
 
     def save_all_settings(self, settings: dict) -> bool:
+        """Upsert multiple settings in a single transaction."""
         try:
             with self._transaction() as conn:
                 for key, value in settings.items():
@@ -856,6 +878,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def get_colors(self) -> List[str]:
+        """Return all color names ordered alphabetically."""
         conn = self._connect()
         try:
             rows = conn.execute("SELECT name FROM colors ORDER BY name").fetchall()
@@ -864,6 +887,7 @@ class DatabaseManager:
             conn.close()
 
     def add_color(self, color: str) -> bool:
+        """Insert a new color name (no-op if it already exists)."""
         if not color or not color.strip():
             return False
         try:
@@ -882,6 +906,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_history(self, history: dict) -> bool:
+        """Insert or replace a filament history (archive) record."""
         cols = ", ".join(history.keys())
         placeholders = ", ".join(["?"] * len(history))
         sql = f"INSERT OR REPLACE INTO filament_history ({cols}) VALUES ({placeholders})"
@@ -894,6 +919,7 @@ class DatabaseManager:
             return False
 
     def get_all_history(self) -> List[dict]:
+        """Fetch all filament history records ordered by archive date descending."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -908,6 +934,7 @@ class DatabaseManager:
     # ------------------------------------------------------------------
 
     def save_user(self, user: dict) -> bool:
+        """Insert or replace a user record."""
         cols = ", ".join(user.keys())
         placeholders = ", ".join(["?"] * len(user))
         sql = f"INSERT OR REPLACE INTO users ({cols}) VALUES ({placeholders})"
@@ -920,6 +947,7 @@ class DatabaseManager:
             return False
 
     def get_user(self, username: str) -> Optional[dict]:
+        """Fetch a user record by username."""
         conn = self._connect()
         try:
             row = conn.execute(
@@ -930,6 +958,7 @@ class DatabaseManager:
             conn.close()
 
     def get_all_users(self) -> List[dict]:
+        """Fetch all user records ordered by username."""
         conn = self._connect()
         try:
             rows = conn.execute(
@@ -940,6 +969,7 @@ class DatabaseManager:
             conn.close()
 
     def delete_user(self, user_id: str) -> bool:
+        """Permanently delete a user record by ID."""
         try:
             with self._transaction() as conn:
                 conn.execute("DELETE FROM users WHERE id=?", (user_id,))
