@@ -136,7 +136,7 @@ def get_orders_by_status(self, status: str) -> list[dict]:
     """
     with self._connect() as conn:
         rows = conn.execute(
-            "SELECT * FROM orders WHERE status = ? AND deleted = 0",
+            "SELECT * FROM orders WHERE status = ? AND is_deleted = 0",
             (status,),
         ).fetchall()
     return [dict(r) for r in rows]

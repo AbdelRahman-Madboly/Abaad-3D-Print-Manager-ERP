@@ -12,9 +12,18 @@
 │   ├── .gitkeep
 │   ├── abaad_v5.db
 │   └── users.json
+├── print3d-manager-project-knowledge
+│   ├── CLAUDE-PROJECT-SETUP.md
+│   ├── PHASE-4.5-PROMPT.md
+│   ├── PHASE1-REPORT.md
+│   ├── PHASE2-PROMPT.md
+│   ├── PHASE2-REPORT.md
+│   ├── PHASE4-PROMPT.md
+│   ├── PHASE4-REPORT.md
+│   ├── README.md
+│   └── REFACTOR-MASTER-PLAN.md
 ├── scripts
-│   ├── install.py
-│   └── migrate_v4_to_v5.py
+│   └── install.py
 ├── src
 │   ├── auth
 │   │   ├── __init__.py
@@ -38,11 +47,13 @@
 │   │   ├── dialogs
 │   │   │   ├── __init__.py
 │   │   │   ├── item_dialog.py
-│   │   │   └── login_dialog.py
+│   │   │   ├── login_dialog.py
+│   │   │   └── setup_wizard.py
 │   │   ├── tabs
 │   │   │   ├── __init__.py
 │   │   │   ├── analytics_tab.py
 │   │   │   ├── customers_tab.py
+│   │   │   ├── dashboard_tab.py
 │   │   │   ├── expenses_tab.py
 │   │   │   ├── failures_tab.py
 │   │   │   ├── filament_tab.py
@@ -59,13 +70,15 @@
 │       ├── __init__.py
 │       └── helpers.py
 ├── tests
+│   ├── test_dashboard_tab.py
 │   ├── test_database.py
 │   ├── test_finance_service.py
 │   ├── test_inventory_service.py
-│   ├── test_migration.py
 │   ├── test_models.py
 │   ├── test_order_service.py
-│   └── test_pdf_service.py
+│   ├── test_pdf_service.py
+│   ├── test_phase2.py
+│   └── test_printer_service.py
 ├── .gitignore
 ├── FileTree.md
 ├── LICENSE
