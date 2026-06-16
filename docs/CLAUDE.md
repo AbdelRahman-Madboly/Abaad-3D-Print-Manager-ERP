@@ -102,24 +102,22 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 6 | Cross-platform polish (fonts, icons, UI/UX) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
 | 7 | PDF service polish + code documentation | ✅ DONE — 199 passed / 1 skipped / 0 failed |
 | 8 | Packaging (PyInstaller) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
-| 9 | Release prep (changelog, versioning, final QA) | **NEXT** |
+| 9 | Release prep (changelog, versioning, final QA) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
 
 ---
 
 ## Known issues carried forward
 
 - ~~`auth_manager.py` line ~237 prints `admin / admin123` to stdout~~ — fixed in Phase 2.
-- `data/abaad_v5.db` is tracked by git (`.gitignore` only excludes the old v4 JSON).
-  The live DB must be gitignored. Carry into Phase 5 (missed from Phase 4 task list).
+- ~~`data/abaad_v5.db` is tracked by git~~ — fixed in Phase 9; removed via `git rm --cached`.
 - ~~`generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice~~ — fixed in Phase 7.
 - `src/ui/context_menu.py` may be dead code — `analytics_tab.py` (deleted in Phase 3)
-  was the only known importer. Verify in Phase 6 cross-platform audit before deleting.
+  was the only known importer. Verify before deleting in a future phase.
 - ~~`default_cost_per_gram` is saved to the `settings` table by the wizard but is not in
   `DEFAULT_SETTINGS`~~ — fixed in Phase 7; key added to `DEFAULT_SETTINGS` in `config.py`.
 - Wizard duplicate-spool guard: if the app crashes after Step 2 commits filament spools
   but before Step 4 sets `setup_complete = "1"`, re-running the wizard will seed duplicate
-  spools. A future guard should check for existing spools before creating. Acceptable
-  for current scope; note for Phase 6 or later.
+  spools. A future guard should check for existing spools before creating.
 
 ---
 
@@ -138,9 +136,9 @@ python3 -m pytest -q
 python3 -m pytest tests/test_order_service.py -v
 ```
 
-**Dev environment note:** no venv exists yet (Phase 5 adds it). Run tests
-with `python3 -m pytest` using the conda base env which has pytest installed.
-After Phase 5, use `.venv/bin/python -m pytest`.
+**Dev environment note:** `.venv/` exists at repo root (created in Phase 8).
+Run `make install` or `pip install -e ".[dev]"` to install all dependencies.
+Use `make test` or `python3 -m pytest -q` to run the test suite.
 
 ---
 
