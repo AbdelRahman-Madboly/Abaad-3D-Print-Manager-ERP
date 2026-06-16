@@ -18,7 +18,6 @@ Covers:
   8. Default-password warning sentinel values (source inspection + logic)
 """
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -203,9 +202,9 @@ class TestFormatCurrency:
         """Passing symbol= must bypass the DB entirely."""
         boom = MagicMock(side_effect=AssertionError("DB must not be called"))
         monkeypatch.setattr("src.core.database.get_database", boom)
-        from src.utils.helpers import format_currency
         # Pre-set cache to None so the function WOULD hit DB if symbol is omitted
         from src.utils import helpers as h
+        from src.utils.helpers import format_currency
         h._currency_symbol_cache = None
         result = format_currency(50.0, symbol="SAR")
         assert result == "50.00 SAR"
@@ -231,8 +230,8 @@ class TestPdfServiceLoadCompany:
         assert PdfService(_make_db({}))._load_company()["currency_symbol"] == "EGP"
 
     def test_logo_path_is_config_default_when_no_setting(self):
-        from src.services.pdf_service import PdfService
         from src.core.config import LOGO_PATH
+        from src.services.pdf_service import PdfService
         c = PdfService(_make_db({}))._load_company()
         assert c["logo_path"] == LOGO_PATH
 
@@ -251,8 +250,8 @@ class TestPdfServiceLoadCompany:
 
     def test_custom_logo_falls_back_when_file_missing(self):
         """Non-existent logo path → falls back to config LOGO_PATH."""
-        from src.services.pdf_service import PdfService
         from src.core.config import LOGO_PATH
+        from src.services.pdf_service import PdfService
         c = PdfService(_make_db({"company_logo_path": "assets/ghost.png"}))._load_company()
         assert c["logo_path"] == LOGO_PATH
 

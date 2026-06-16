@@ -16,10 +16,9 @@ from typing import Optional
 
 from src.auth.permissions import Permission
 from src.services.customer_service import CustomerService
+from src.ui.context_menu import bind_treeview_menu
 from src.ui.theme import Colors, Fonts
 from src.utils.helpers import format_currency
-from src.ui.context_menu import bind_treeview_menu
-
 
 
 class CustomersTab(ttk.Frame):

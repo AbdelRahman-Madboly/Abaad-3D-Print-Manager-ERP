@@ -17,10 +17,9 @@ from typing import Optional
 
 from src.auth.permissions import Permission
 from src.services.printer_service import PrinterService
+from src.ui.context_menu import bind_treeview_menu
 from src.ui.theme import Colors, Fonts
 from src.utils.helpers import format_currency, format_time_minutes
-from src.ui.context_menu import bind_treeview_menu
-
 
 
 class PrintersTab(ttk.Frame):

@@ -28,10 +28,14 @@ from pathlib import Path
 from typing import Optional
 
 from src.core.config import (
-    APP_NAME, APP_VERSION,
-    COMPANY, EXPORT_DIR, LOGO_PATH, PROJECT_ROOT, DEFAULT_SETTINGS,
+    APP_NAME,
+    APP_VERSION,
+    COMPANY,
+    DEFAULT_SETTINGS,
+    EXPORT_DIR,
+    LOGO_PATH,
+    PROJECT_ROOT,
 )
-from src.utils.helpers import format_currency
 
 log = logging.getLogger(__name__)
 
@@ -41,15 +45,19 @@ log = logging.getLogger(__name__)
 
 _RL_OK = False
 try:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
-    from reportlab.platypus import (
-        SimpleDocTemplate, Table, TableStyle,
-        Paragraph, Spacer, HRFlowable,
-    )
     from reportlab.lib import colors as rl_colors
+    from reportlab.lib.enums import TA_CENTER
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import (
+        HRFlowable,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
     try:
         from reportlab.platypus import Image as _RLImage
     except ImportError:
@@ -249,18 +257,26 @@ class PdfService:
             return base
         try:
             rows = self._db.get_all_settings()
-            if rows.get("company_name"):     base["name"]            = rows["company_name"]
-            if rows.get("company_subtitle"): base["subtitle"]        = rows["company_subtitle"]
-            if rows.get("company_phone"):    base["phone"]           = rows["company_phone"]
-            if rows.get("company_address"):  base["address"]         = rows["company_address"]
-            if rows.get("company_tagline"):  base["tagline"]         = rows["company_tagline"]
-            if rows.get("company_social"):   base["social"]          = rows["company_social"]
-            if rows.get("currency_symbol"):  base["currency_symbol"] = rows["currency_symbol"]
+            if rows.get("company_name"):
+                base["name"] = rows["company_name"]
+            if rows.get("company_subtitle"):
+                base["subtitle"] = rows["company_subtitle"]
+            if rows.get("company_phone"):
+                base["phone"] = rows["company_phone"]
+            if rows.get("company_address"):
+                base["address"] = rows["company_address"]
+            if rows.get("company_tagline"):
+                base["tagline"] = rows["company_tagline"]
+            if rows.get("company_social"):
+                base["social"] = rows["company_social"]
+            if rows.get("currency_symbol"):
+                base["currency_symbol"] = rows["currency_symbol"]
             if rows.get("quote_deposit_pct"):
                 base["deposit_pct"] = float(rows["quote_deposit_pct"])
             if rows.get("quote_validity_days"):
                 base["validity_days"] = int(rows["quote_validity_days"])
-            if rows.get("invoice_footer"):   base["footer_note"]     = rows["invoice_footer"]
+            if rows.get("invoice_footer"):
+                base["footer_note"] = rows["invoice_footer"]
             # Resolve logo: custom path (relative to PROJECT_ROOT) → fallback
             rel = rows.get("company_logo_path", "")
             if rel:

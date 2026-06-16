@@ -5,14 +5,14 @@ Low-level tests for DatabaseManager: pragmas, CRUD, soft delete,
 table counts, backup, and CSV export.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.database import DatabaseManager
-
 
 # ---------------------------------------------------------------------------
 # Fixture

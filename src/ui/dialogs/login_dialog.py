@@ -13,13 +13,12 @@ Phase 2 changes:
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
 from pathlib import Path
+from tkinter import messagebox, ttk
 
 from src.auth.auth_manager import get_auth_manager
-from src.core.config import APP_TITLE, LOGO_PATH, DEFAULT_SETTINGS
+from src.core.config import APP_TITLE, DEFAULT_SETTINGS, LOGO_PATH
 from src.ui.theme import Colors, Fonts
-
 
 # Sentinel: password the default admin account ships with
 _DEFAULT_ADMIN_USER = "admin"

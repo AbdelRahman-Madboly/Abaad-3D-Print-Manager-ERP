@@ -5,31 +5,30 @@ Pure unit tests for Abaad v5 dataclass models and business logic.
 No database required — all tests operate on in-memory objects.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Allow running pytest from the project root without installing the package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.core.models import (
-    Order,
-    PrintItem,
-    PrintSettings,
-    Customer,
-    FilamentSpool,
-    Printer,
-    PrintFailure,
-    Expense,
-    calculate_payment_fee,
-)
 from src.core.config import (
     DEFAULT_RATE_PER_GRAM,
-    DEFAULT_COST_PER_GRAM,
     PAYMENT_METHODS,
     SPOOL_STATUSES,
 )
-
+from src.core.models import (
+    Customer,
+    Expense,
+    FilamentSpool,
+    Order,
+    Printer,
+    PrintFailure,
+    PrintItem,
+    PrintSettings,
+    calculate_payment_fee,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers

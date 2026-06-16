@@ -17,9 +17,7 @@ import logging
 from typing import Dict, List, Optional
 
 from src.core.config import (
-    DEFAULT_COST_PER_GRAM,
     SPOOL_PRICE_FIXED,
-    TRASH_THRESHOLD_GRAMS,
 )
 from src.core.models import FilamentHistory, FilamentSpool
 from src.utils.helpers import generate_id, now_str

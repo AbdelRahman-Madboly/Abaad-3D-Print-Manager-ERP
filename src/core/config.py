@@ -5,7 +5,6 @@ Single source of truth for all constants, paths, and company info.
 Abaad 3D Print Manager — v5.0
 """
 
-import os
 from pathlib import Path
 
 # ---------------------------------------------------------------------------

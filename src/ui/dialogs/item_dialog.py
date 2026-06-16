@@ -13,15 +13,17 @@ Features:
 
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from typing import Optional
 
 from src.core.config import (
-    DEFAULT_RATE_PER_GRAM, DEFAULT_COST_PER_GRAM,
-    DEFAULT_NOZZLE, DEFAULT_LAYER_HEIGHT,
-    SUPPORT_TYPES, ELECTRICITY_RATE,
+    DEFAULT_COST_PER_GRAM,
+    DEFAULT_LAYER_HEIGHT,
+    DEFAULT_NOZZLE,
+    DEFAULT_RATE_PER_GRAM,
+    ELECTRICITY_RATE,
+    SUPPORT_TYPES,
     TOLERANCE_THRESHOLD_GRAMS,
 )
-from src.ui.theme import Colors, Fonts
+from src.ui.theme import Colors
 from src.utils.helpers import format_currency, safe_float, safe_int
 
 

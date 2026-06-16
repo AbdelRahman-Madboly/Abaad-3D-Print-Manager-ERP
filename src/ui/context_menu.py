@@ -20,8 +20,7 @@ Usage in any tab:
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Callable, List, Tuple, Union
-
+from typing import Callable, List, Optional, Tuple
 
 # Action = (label, callback) or None for a separator
 Action = Optional[Tuple[str, Callable]]

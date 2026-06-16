@@ -20,7 +20,6 @@ from src.services.finance_service import FinanceService
 from src.ui.theme import Colors, Fonts
 from src.utils.helpers import format_currency, safe_float
 
-
 _CATEGORY_ICONS = {
     "Bills":         "💡",
     "Engineer":      "👷",
