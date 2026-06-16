@@ -30,26 +30,25 @@ all alert/aggregation logic lives in the services it's constructed with.
 """
 
 import tkinter as tk
-from tkinter import ttk
 from datetime import datetime, timedelta
+from tkinter import ttk
 
-from src.services.finance_service import FinanceService
 from src.services.customer_service import CustomerService
+from src.services.finance_service import FinanceService
 from src.services.inventory_service import InventoryService
-from src.services.printer_service import PrinterService
 from src.services.order_service import OrderService
+from src.services.printer_service import PrinterService
 from src.ui.theme import Colors, Fonts
-from src.ui.widgets import AlertCard, StatCard, ScrollableFrame
+from src.ui.widgets import AlertCard, ScrollableFrame, StatCard
 from src.utils.helpers import format_currency, format_time_minutes
-
 
 # Matplotlib is optional — graceful degradation (same pattern as the
 # previous Analytics tab)
 try:
     import matplotlib
     matplotlib.use("TkAgg")
-    from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    from matplotlib.figure import Figure
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False

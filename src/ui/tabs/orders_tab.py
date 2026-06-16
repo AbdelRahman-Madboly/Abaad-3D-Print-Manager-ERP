@@ -17,10 +17,9 @@ from typing import Optional
 from src.core.config import ORDER_STATUSES, PAYMENT_METHODS
 from src.core.models import Order, PrintItem
 from src.services.order_service import OrderService
-from src.ui.theme import Colors, Fonts
-from src.utils.helpers import format_currency, safe_float, safe_int
 from src.ui.context_menu import bind_treeview_menu
-
+from src.ui.theme import Colors, Fonts
+from src.utils.helpers import safe_float, safe_int
 
 
 class OrdersTab(ttk.Frame):
@@ -336,7 +335,6 @@ class OrdersTab(ttk.Frame):
             "Cancelled":   "#f1f5f9",
         }
         for o in orders:
-            item_count = self._svc.get_order(o.id).item_count if False else "—"
             # Fast path: use stored total_weight approximation
             values = (
                 f"#{o.order_number}",

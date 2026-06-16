@@ -16,9 +16,9 @@ import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
-from src.auth.permissions import Permission, UserRole, ROLE_PERMISSIONS
+from src.auth.permissions import ROLE_PERMISSIONS, Permission, UserRole
 
 log = logging.getLogger(__name__)
 

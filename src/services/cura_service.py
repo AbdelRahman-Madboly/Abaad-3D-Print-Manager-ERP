@@ -18,11 +18,10 @@ Usage:
     result = CuraService.extract_from_clipboard()
 """
 
-import re
-import math
 import logging
+import re
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from src.utils.helpers import filament_length_to_grams
 
@@ -36,14 +35,16 @@ _PILLOW_OK    = False
 _TESSERACT_OK = False
 
 try:
-    from PIL import Image, ImageGrab, ImageFilter, ImageEnhance  # type: ignore
+    from PIL import Image, ImageEnhance, ImageFilter, ImageGrab  # type: ignore
     _PILLOW_OK = True
 except ImportError:
     pass
 
 try:
-    import pytesseract   # type: ignore
-    import shutil, os
+    import os
+    import shutil
+
+    import pytesseract  # type: ignore
 
     # Try PATH first, then common Windows locations
     _tess = shutil.which("tesseract")
