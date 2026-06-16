@@ -67,6 +67,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _setup_window(self) -> None:
+        """Configure root window title, size, minimum bounds, and close handler."""
         self._root.title(APP_TITLE)
         try:
             self._root.state("zoomed")
@@ -97,18 +98,21 @@ class App:
     # ------------------------------------------------------------------
 
     def _get_tenant_name(self) -> str:
+        """Return the tenant's company name from settings, falling back to config."""
         try:
             return self._db.get_setting("company_name") or config.COMPANY["name"]
         except Exception:
             return config.COMPANY["name"]
 
     def _get_tenant_subtitle(self) -> str:
+        """Return the tenant's app subtitle from settings, falling back to config."""
         try:
             return self._db.get_setting("app_subtitle") or config.COMPANY["subtitle"]
         except Exception:
             return config.COMPANY["subtitle"]
 
     def _resolve_logo(self) -> Path:
+        """Return the tenant's logo path from settings, or the default Abaad logo."""
         try:
             path_str = self._db.get_setting("company_logo_path")
             if path_str:
@@ -124,6 +128,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _build_header(self) -> None:
+        """Build the top header bar with tenant logo, name, user badge, and logout."""
         hdr = tk.Frame(self._root, bg=Colors.BG_DARK, pady=8, padx=16)
         hdr.pack(fill=tk.X)
 
@@ -172,6 +177,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _build_notebook(self) -> None:
+        """Instantiate and add permitted tabs to the main notebook widget."""
         self._nb = ttk.Notebook(self._root)
         self._nb.pack(fill=tk.BOTH, expand=True, padx=8, pady=(4, 0))
 
@@ -270,6 +276,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _build_status_bar(self) -> None:
+        """Build the bottom status bar with live order/spool/revenue metrics."""
         bar = tk.Frame(self._root, bg=Colors.BG_DARK, pady=3)
         bar.pack(fill=tk.X, side=tk.BOTTOM)
 
@@ -315,6 +322,7 @@ class App:
         self._status_clock.pack(side=tk.RIGHT)
 
     def _update_status_bar(self) -> None:
+        """Refresh status bar labels with current order, spool, and revenue data."""
         try:
             orders = self._svc["order"].get_all_orders()
             active = sum(1 for o in orders
@@ -354,6 +362,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _bind_shortcuts(self) -> None:
+        """Register global keyboard shortcuts on the root window."""
         root = self._root
 
         # Ctrl+N — new order (switch to Orders tab and call new_order)
@@ -380,7 +389,7 @@ class App:
             return None
 
     def _shortcut_new_order(self, _event=None) -> None:
-        # Switch to Orders tab (wherever it ended up) and start a new order
+        """Ctrl+N — switch to Orders tab and start a new order form."""
         try:
             idx = self._tab_keys.index("orders")
         except ValueError:
@@ -390,6 +399,7 @@ class App:
             self._orders_tab.new_order()
 
     def _shortcut_save(self, _event=None) -> None:
+        """Ctrl+S — call .save() on the currently active tab if it exists."""
         tab = self._active_tab()
         if tab and hasattr(tab, "save"):
             tab.save()
@@ -397,6 +407,7 @@ class App:
             tab._save_order()
 
     def _shortcut_focus_search(self, _event=None) -> None:
+        """Ctrl+F — focus the first search Entry on the currently active tab."""
         tab = self._active_tab()
         if tab and hasattr(tab, "_search_var"):
             # Focus the search Entry widget on this tab
@@ -414,6 +425,7 @@ class App:
         return False
 
     def _shortcut_refresh_all(self, _event=None) -> None:
+        """F5 — call .refresh() on every tab and update the status bar."""
         for tab in self._tab_refs:
             if hasattr(tab, "refresh"):
                 try:
@@ -423,6 +435,7 @@ class App:
         self._update_status_bar()
 
     def _shortcut_escape(self, _event=None) -> None:
+        """Escape — clear selection or detail pane on the currently active tab."""
         tab = self._active_tab()
         if tab and hasattr(tab, "_clear_detail"):
             tab._clear_detail()
@@ -434,6 +447,7 @@ class App:
     # ------------------------------------------------------------------
 
     def _start_clock(self) -> None:
+        """Start a 30-second repeating tick that updates the status bar clock."""
         def _tick():
             self._status_clock.config(
                 text=datetime.now().strftime("%H:%M  %d/%m/%Y"))
@@ -445,8 +459,10 @@ class App:
     # ------------------------------------------------------------------
 
     def _logout(self) -> None:
+        """Destroy the main window and invoke the on_logout callback."""
         self._root.destroy()
         self._on_logout()
 
     def _on_close(self) -> None:
+        """Handle window close (X button) — same as logout."""
         self._root.destroy()
