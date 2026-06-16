@@ -19,6 +19,7 @@ from src.core.models import Order, PrintItem
 from src.services.order_service import OrderService
 from src.ui.context_menu import bind_treeview_menu
 from src.ui.theme import Colors, Fonts
+from src.ui.widgets import Tooltip
 from src.utils.helpers import safe_float, safe_int
 
 
@@ -154,8 +155,10 @@ class OrdersTab(ttk.Frame):
         ttk.Label(r1, text="Phone:").pack(side=tk.LEFT, padx=(8, 0))
         self.cust_phone = ttk.Entry(r1, width=14, font=Fonts.DEFAULT)
         self.cust_phone.pack(side=tk.LEFT, padx=4)
-        ttk.Button(r1, text="🔍", width=3,
-                   command=self._find_customer).pack(side=tk.LEFT, padx=2)
+        _lookup_btn = ttk.Button(r1, text="🔍", width=3,
+                                  command=self._find_customer)
+        _lookup_btn.pack(side=tk.LEFT, padx=2)
+        Tooltip(_lookup_btn, "Look up existing customer")
 
         r2 = ttk.Frame(cust_frm)
         r2.pack(fill=tk.X, pady=(6, 0))
