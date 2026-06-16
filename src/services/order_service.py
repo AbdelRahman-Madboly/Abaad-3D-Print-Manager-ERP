@@ -29,7 +29,6 @@ from src.core.config import (
     DEFAULT_RATE_PER_GRAM,
     ELECTRICITY_RATE,
     ORDER_READY_ALERT_DAYS,
-    TOLERANCE_THRESHOLD_GRAMS,
 )
 from src.core.models import Order, PrintItem
 from src.utils.helpers import calculate_payment_fee, generate_id, now_str

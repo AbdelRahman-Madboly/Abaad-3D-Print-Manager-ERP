@@ -4,16 +4,16 @@ tests/test_inventory_service.py
 Integration tests for InventoryService against an in-memory SQLite database.
 """
 
-import pytest
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.core.config import SPOOL_PRICE_FIXED
 from src.core.database import DatabaseManager
 from src.services.inventory_service import InventoryService
-from src.core.config import SPOOL_PRICE_FIXED, TRASH_THRESHOLD_GRAMS
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

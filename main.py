@@ -28,10 +28,10 @@ log = logging.getLogger("abaad")
 
 
 def main() -> None:
-    from src.core.config import ensure_directories      # 1. Directories
+    from src.core.config import ensure_directories  # 1. Directories
     ensure_directories()
 
-    from src.core.database import get_database          # 2. Database
+    from src.core.database import get_database  # 2. Database
     db = get_database()
 
     from src.auth.auth_manager import get_auth_manager  # 3. Auth

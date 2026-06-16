@@ -11,25 +11,24 @@ Task 4.3 additions:
 """
 
 import tkinter as tk
-from tkinter import ttk
 from datetime import datetime
 from pathlib import Path
+from tkinter import ttk
 from typing import Optional
 
 from src.auth.auth_manager import User
 from src.auth.permissions import Permission
-from src.core.config import APP_TITLE, APP_VERSION, LOGO_PATH, ICON_PATH
 from src.core import config
-from src.ui.theme import Colors, Fonts, setup_styles
-
-from src.ui.tabs.orders_tab    import OrdersTab
+from src.core.config import APP_TITLE, APP_VERSION, ICON_PATH
 from src.ui.tabs.customers_tab import CustomersTab
-from src.ui.tabs.filament_tab  import FilamentTab
-from src.ui.tabs.printers_tab  import PrintersTab
-from src.ui.tabs.failures_tab  import FailuresTab
-from src.ui.tabs.expenses_tab  import ExpensesTab
 from src.ui.tabs.dashboard_tab import DashboardTab
-from src.ui.tabs.settings_tab  import SettingsTab
+from src.ui.tabs.expenses_tab import ExpensesTab
+from src.ui.tabs.failures_tab import FailuresTab
+from src.ui.tabs.filament_tab import FilamentTab
+from src.ui.tabs.orders_tab import OrdersTab
+from src.ui.tabs.printers_tab import PrintersTab
+from src.ui.tabs.settings_tab import SettingsTab
+from src.ui.theme import Colors, Fonts, setup_styles
 
 
 class App:
@@ -281,8 +280,8 @@ class App:
                                          bg=Colors.BG_DARK, fg=Colors.TEXT_MUTED,
                                          font=Fonts.SMALL, padx=10)
 
-        sep = lambda: tk.Label(bar, text="|", bg=Colors.BG_DARK,
-                                fg=Colors.BORDER_DARK)
+        def sep():
+            return tk.Label(bar, text="|", bg=Colors.BG_DARK, fg=Colors.BORDER_DARK)
 
         self._status_orders.pack(side=tk.LEFT)
         sep().pack(side=tk.LEFT)

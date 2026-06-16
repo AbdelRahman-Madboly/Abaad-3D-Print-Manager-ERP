@@ -4,17 +4,17 @@ tests/test_order_service.py
 Integration tests for OrderService against an in-memory SQLite database.
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.database import DatabaseManager
-from src.services.order_service import OrderService
-from src.services.inventory_service import InventoryService
 from src.core.models import Order, PrintItem
-
+from src.services.inventory_service import InventoryService
+from src.services.order_service import OrderService
 
 # ---------------------------------------------------------------------------
 # Fixtures

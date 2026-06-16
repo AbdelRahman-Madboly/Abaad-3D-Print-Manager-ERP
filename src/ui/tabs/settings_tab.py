@@ -19,20 +19,22 @@ Phase 2 changes:
   - Currency cache invalidated on save so format_currency() picks up new symbol
 """
 
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-from pathlib import Path
 import shutil
+import tkinter as tk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 
 from src.core.config import (
-    APP_NAME, APP_VERSION,
-    DEFAULT_RATE_PER_GRAM, SPOOL_PRICE_FIXED,
-    DB_PATH, ASSETS_DIR, PROJECT_ROOT, DEFAULT_SETTINGS,
+    APP_NAME,
+    APP_VERSION,
+    ASSETS_DIR,
+    DB_PATH,
+    DEFAULT_RATE_PER_GRAM,
+    DEFAULT_SETTINGS,
+    SPOOL_PRICE_FIXED,
 )
 from src.services.finance_service import FinanceService
 from src.ui.theme import Colors, Fonts
-from src.utils.helpers import format_currency, safe_float
-from src.ui.context_menu import bind_treeview_menu
 
 
 class SettingsTab(ttk.Frame):
@@ -381,7 +383,9 @@ class SettingsTab(ttk.Frame):
             self._data_status.config(
                 text=f"✅ CSV files exported to: {export_dir}",
                 foreground=Colors.SUCCESS)
-            import os, subprocess, sys
+            import os
+            import subprocess
+            import sys
             if sys.platform == "win32":
                 os.startfile(str(export_dir))
             elif sys.platform == "darwin":

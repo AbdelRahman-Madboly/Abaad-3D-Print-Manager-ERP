@@ -14,11 +14,10 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.core.database import DatabaseManager
+from src.core.models import Order, PrintItem
 from src.services.finance_service import FinanceService
 from src.services.order_service import OrderService
 from src.services.printer_service import PrinterService
-from src.core.models import Order, PrintItem
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
