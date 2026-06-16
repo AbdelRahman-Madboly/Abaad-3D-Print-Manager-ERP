@@ -36,6 +36,7 @@ class PrinterService:
     # ------------------------------------------------------------------
 
     def get_printer(self, printer_id: str) -> Optional[Printer]:
+        """Load a single active printer by ID, or None if not found."""
         rows = self._db.get_all_printers()
         for row in rows:
             if row.get("id") == printer_id:
@@ -43,6 +44,7 @@ class PrinterService:
         return None
 
     def get_all_printers(self) -> List[Printer]:
+        """Return all active printers ordered by name."""
         return [Printer.from_dict(r) for r in self._db.get_all_printers()]
 
     # ------------------------------------------------------------------
