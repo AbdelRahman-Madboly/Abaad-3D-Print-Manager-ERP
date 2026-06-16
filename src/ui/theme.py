@@ -12,8 +12,23 @@ Usage:
     self.root.configure(bg=Colors.BG)
 """
 
+import platform
 import tkinter as tk
 from tkinter import ttk
+
+
+def _system_font() -> str:
+    """Return the best available UI font for the current OS."""
+    system = platform.system()
+    if system == "Windows":
+        return "Segoe UI"
+    elif system == "Darwin":
+        return "SF Pro Text"
+    else:  # Linux / Ubuntu
+        return "Ubuntu"
+
+
+_FONT_FAMILY = _system_font()
 
 # ---------------------------------------------------------------------------
 # Colors
@@ -96,17 +111,17 @@ class Colors:
 class Fonts:
     """Font tuples for all text elements in the application."""
 
-    DEFAULT     = ("Segoe UI", 10)
-    TITLE       = ("Segoe UI", 16, "bold")
-    SUBTITLE    = ("Segoe UI", 12)
-    HEADER      = ("Segoe UI", 13, "bold")
-    SECTION     = ("Segoe UI", 11, "bold")
-    SMALL       = ("Segoe UI", 9)
-    TINY        = ("Segoe UI", 8)
-    BUTTON      = ("Segoe UI", 10)
-    BUTTON_BOLD = ("Segoe UI", 10, "bold")
+    DEFAULT     = (_FONT_FAMILY, 10)
+    TITLE       = (_FONT_FAMILY, 16, "bold")
+    SUBTITLE    = (_FONT_FAMILY, 12)
+    HEADER      = (_FONT_FAMILY, 13, "bold")
+    SECTION     = (_FONT_FAMILY, 11, "bold")
+    SMALL       = (_FONT_FAMILY, 9)
+    TINY        = (_FONT_FAMILY, 8)
+    BUTTON      = (_FONT_FAMILY, 10)
+    BUTTON_BOLD = (_FONT_FAMILY, 10, "bold")
     MONO        = ("Consolas", 10)
-    BIG_NUMBER  = ("Segoe UI", 14, "bold")
+    BIG_NUMBER  = (_FONT_FAMILY, 14, "bold")
 
 
 # ---------------------------------------------------------------------------
