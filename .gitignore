@@ -52,3 +52,11 @@ exports/
 
 # PyInstaller
 *.spec.bak
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.pnpm-store/
+
+# Figma design output (source for frontend/ — not committed)
+docs/ui-design/Abaad ERP React Component Tree/
