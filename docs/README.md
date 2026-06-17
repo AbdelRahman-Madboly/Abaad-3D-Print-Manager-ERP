@@ -1,16 +1,14 @@
 # docs/ — Abaad ERP Project Documentation
 
-Everything needed to plan, build, and extend Abaad ERP using Claude Code.
-The actual source code lives in `src/`. This folder is the planning layer.
+Developer context, phase history, and planning documents.
+The live source code lives in `src/`, `api/`, and `frontend/`.
 
 ---
 
 ## How to start a Claude Code session
 
 ```bash
-cat docs/CLAUDE.md                        # always first — project context + rules
-cat docs/skills/ABAAD-SKILL.md            # working patterns for this codebase
-cat docs/phases/PHASE-N-PROMPT.md         # today's tasks
+cat docs/CLAUDE.md   # always first — project rules and architecture
 ```
 
 ---
@@ -20,36 +18,18 @@ cat docs/phases/PHASE-N-PROMPT.md         # today's tasks
 | # | Name | Status | Test baseline |
 |---|------|--------|---------------|
 | 0 | Repo Audit & Honest Baseline | ✅ Done | — |
-| 1 | Core Stabilization | ✅ Done | 76 passed / 1 skipped |
+| 1 | Core Stabilization | ✅ Done | 165 passed / 1 skipped |
 | 2 | Tenant Brand System | ✅ Done | 190 passed / 1 skipped |
 | 3 | Dashboard & Analytics Verification | ✅ Done | 194 passed / 1 skipped |
 | 4 | Git Workflow & CI | ✅ Done | 194 passed / 1 skipped |
-| 5 | Launchers (Ubuntu + Windows) | **▶ Current** | starts at 194 / 1 skipped |
-| 6 | Cross-platform Polish & UI/UX | ⏳ Pending | — |
-| 7 | PDF Service Polish + Documentation | ⏳ Pending | — |
-| 8 | Packaging (PyInstaller) | ⏳ Pending | — |
+| 5 | Launchers (Ubuntu + Windows) | ✅ Done | 194 passed / 1 skipped |
+| 6 | Cross-platform Polish & UI/UX | ✅ Done | 194 passed / 1 skipped |
+| 7 | PDF Service Polish + Documentation | ✅ Done | 199 passed / 1 skipped |
+| 8 | Packaging (PyInstaller) | ✅ Done | 199 passed / 1 skipped |
+| 9 | Release Prep (changelog, versioning) | ✅ Done | 199 passed / 1 skipped |
+| 10 | React Full-Stack UI + FastAPI Bridge | ✅ Done — v6.0.0 released | CI green |
 
----
-
-## After finishing a phase — update checklist
-
-When a phase report (`PHASE-N-REPORT.md`) is written, work through this list.
-Every item that changed must be updated before the next phase starts.
-
-### Always update
-1. **`docs/CLAUDE.md`** — Phase status table: mark `✅ DONE — N passed / N skipped / N failed`
-2. **`docs/CLAUDE.md`** — Known Issues: strike through anything fixed; add any new issues raised in the report's Open Questions
-3. **`docs/README.md`** — Phase status table: change `▶ Current` → `✅ Done` for finished phase; advance `▶ Current` to next phase; update test baseline
-4. **`docs/phases/PHASE-{N+1}-PROMPT.md`** — Update the prerequisite line with the exact test count from the report
-
-### Update only if relevant
-5. **`docs/MASTER-PLAN.md`** — Update "Honest current state" if the completed phase changed what is broken or fixed
-6. **`docs/phases/PHASE-{M}-PROMPT.md`** (later phases) — If the report's Open Questions flag something as "Phase M scope", add a task or note to that phase's prompt
-7. **`docs/skills/ABAAD-SKILL.md`** — "File ownership by phase" table if new files were added or ownership changed; "Code patterns" if new patterns were established
-
-### Never needed
-- Re-reading the report back into CLAUDE.md verbatim — just the delta (new known issues, status change) goes there
-- Updating prompts for phases that are already done
+**All phases complete. Current release: v6.0.0**
 
 ---
 
@@ -57,35 +37,17 @@ Every item that changed must be updated before the next phase starts.
 
 ```
 docs/
-├── CLAUDE.md                  ← Root context. Read first in every session.
-├── MASTER-PLAN.md             ← Overall plan, current state, rationale
-├── README.md                  ← This file. Phase status + update checklist.
+├── CLAUDE.md              ← Root developer context. Read first in every session.
+├── CONTRIBUTING.md        ← Branch strategy and commit conventions
+├── MASTER-PLAN.md         ← Overall plan and rationale
+├── README.md              ← This file
+├── USER-GUIDE.md          ← End-user walkthrough of every screen
+├── phases/
+│   ├── Prompt/            ← Phase prompt files (PHASE-N-PROMPT.md)
+│   └── Report/            ← Phase completion reports (PHASE-N-REPORT.md)
 ├── skills/
-│   └── ABAAD-SKILL.md         ← Code patterns, test patterns, what not to do
-└── phases/
-    ├── PHASE-0-PROMPT.md      ✅ done
-    ├── PHASE-0-REPORT.md
-    ├── PHASE-1-PROMPT.md      ✅ done
-    ├── PHASE-1-REPORT.md
-    ├── PHASE-2-PROMPT.md      ✅ done
-    ├── PHASE-2-REPORT.md
-    ├── PHASE-3-PROMPT.md      ✅ done
-    ├── PHASE-3-REPORT.md
-    ├── PHASE-4-PROMPT.md      ✅ done
-    ├── PHASE-4-REPORT.md
-    ├── PHASE-5-PROMPT.md      ← current phase
-    ├── PHASE-6-PROMPT.md
-    ├── PHASE-7-PROMPT.md
-    ├── PHASE-8-PROMPT.md
-    └── archive/
-        └── PHASE-4.5-PROMPT.md   ← superseded; work absorbed into Phase 2
+│   └── ABAAD-SKILL.md     ← Code patterns and test patterns
+├── ui-design/
+│   └── ABAAD-DESIGN-BRIEF.md  ← Figma/React design brief (Phase 10)
+└── archive/               ← Superseded planning documents
 ```
-
----
-
-## Current phase
-
-**Phase 5 — Launchers (Ubuntu + Windows)**
-See `docs/phases/PHASE-5-PROMPT.md`
-
-Test baseline entering this phase: **194 passed / 1 skipped / 0 failed**
