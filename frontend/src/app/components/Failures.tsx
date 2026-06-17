@@ -1,124 +1,94 @@
-import { useState, useMemo } from "react";
-import {
-  AlertTriangle,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { AlertTriangle, Plus, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { Card, CardContent } from "./ui/card";
 import {
-  Card,
-  CardContent,
-} from "./ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
+import { api } from "@/lib/api";
 
-type FailureReason =
-  | "Nozzle Clog"
-  | "Bed Adhesion"
-  | "Layer Shift"
-  | "Filament Tangle"
-  | "Power Outage"
-  | "Stringing"
-  | "Warping"
-  | "Under Extrusion"
-  | "Over Extrusion"
-  | "Broken Part"
-  | "Wrong Settings"
-  | "Filament Ran Out"
-  | "Machine Error"
-  | "Other";
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PrintFailure {
   id: string;
   date: string;
-  reason: FailureReason;
-  source: "Manual" | "Order";
-  orderId?: string;
-  filamentLost: number;
-  timeLost: number;
-  estCost: number;
-  notes: string;
+  reason: string;
+  source: string;
+  order_id?: string;
+  item_name?: string;
+  filament_wasted_grams: number;
+  time_wasted_minutes: number;
+  total_loss: number;
+  description: string;
 }
 
-const FAILURE_REASONS: FailureReason[] = [
-  "Nozzle Clog",
-  "Bed Adhesion",
-  "Layer Shift",
-  "Filament Tangle",
-  "Power Outage",
-  "Stringing",
-  "Warping",
-  "Under Extrusion",
-  "Over Extrusion",
-  "Broken Part",
-  "Wrong Settings",
-  "Filament Ran Out",
-  "Machine Error",
-  "Other",
+const FAILURE_REASONS = [
+  "Nozzle Clog", "Bed Adhesion", "Layer Shift", "Filament Tangle",
+  "Power Outage", "Stringing/Blobs", "Warping", "Under Extrusion",
+  "Over Extrusion", "Broken Part", "Wrong Settings", "Filament Ran Out",
+  "Machine Error", "Other",
 ];
 
-const MOCK_FAILURES: PrintFailure[] = [
-  { id: "1", date: "2026-06-01", reason: "Nozzle Clog",      source: "Order",  orderId: "ORD-001", filamentLost: 45,  timeLost: 90,  estCost: 22.5,  notes: "Partial print" },
-  { id: "2", date: "2026-06-03", reason: "Bed Adhesion",     source: "Manual",                     filamentLost: 80,  timeLost: 120, estCost: 40,    notes: "Forgot bed leveling" },
-  { id: "3", date: "2026-06-05", reason: "Layer Shift",      source: "Order",  orderId: "ORD-004", filamentLost: 120, timeLost: 180, estCost: 60,    notes: "Vibration issue" },
-  { id: "4", date: "2026-06-07", reason: "Filament Tangle",  source: "Manual",                     filamentLost: 30,  timeLost: 60,  estCost: 15,    notes: "" },
-  { id: "5", date: "2026-06-09", reason: "Warping",          source: "Order",  orderId: "ORD-007", filamentLost: 95,  timeLost: 150, estCost: 47.5,  notes: "ABS without enclosure" },
-  { id: "6", date: "2026-06-11", reason: "Power Outage",     source: "Manual",                     filamentLost: 200, timeLost: 240, estCost: 100,   notes: "Grid outage 2h" },
-  { id: "7", date: "2026-06-13", reason: "Wrong Settings",   source: "Order",  orderId: "ORD-010", filamentLost: 60,  timeLost: 90,  estCost: 30,    notes: "Wrong temp profile" },
-  { id: "8", date: "2026-06-15", reason: "Under Extrusion",  source: "Manual",                     filamentLost: 50,  timeLost: 75,  estCost: 25,    notes: "Partial clog" },
+const FAILURE_SOURCES = [
+  "Customer Order", "R&D Project", "Personal/Test", "Other",
 ];
 
 const emptyForm = {
-  date: "",
-  reason: "Nozzle Clog" as FailureReason,
-  source: "Manual" as "Manual" | "Order",
-  orderId: "",
-  filamentLost: "",
-  timeLost: "",
-  notes: "",
+  date:                  new Date().toISOString().slice(0, 10),
+  reason:                "Nozzle Clog",
+  source:                "Other",
+  order_id:              "",
+  item_name:             "",
+  filament_wasted_grams: "",
+  time_wasted_minutes:   "",
+  description:           "",
 };
 
-const COST_PER_GRAM = 1.2;
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function Failures() {
-  const [failures, setFailures] = useState<PrintFailure[]>(MOCK_FAILURES);
+  const [failures, setFailures]     = useState<PrintFailure[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm]             = useState(emptyForm);
   const [filterReason, setFilterReason] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
 
-  const filtered = useMemo(() => {
-    return failures.filter((f) => {
-      const reasonOk = filterReason === "all" || f.reason === filterReason;
-      const sourceOk = filterSource === "all" || f.source === filterSource;
-      return reasonOk && sourceOk;
-    });
-  }, [failures, filterReason, filterSource]);
+  function load() {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filterReason !== "all") params.set("reason", filterReason);
+    if (filterSource !== "all") params.set("source", filterSource);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    api.get<PrintFailure[]>(`/api/failures${qs}`)
+      .then(setFailures)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
 
-  const totalFilament = useMemo(() => filtered.reduce((s, f) => s + f.filamentLost, 0), [filtered]);
-  const totalMinutes = useMemo(() => filtered.reduce((s, f) => s + f.timeLost, 0), [filtered]);
+  useEffect(() => { load(); }, [filterReason, filterSource]);
 
-  function handleDelete() {
+  const totalFilament = useMemo(() => failures.reduce((s, f) => s + f.filament_wasted_grams, 0), [failures]);
+  const totalMinutes  = useMemo(() => failures.reduce((s, f) => s + f.time_wasted_minutes, 0), [failures]);
+
+  async function handleDelete() {
     if (!selectedId) return;
-    setFailures((prev) => prev.filter((f) => f.id !== selectedId));
-    setSelectedId(null);
+    try {
+      await api.delete(`/api/failures/${selectedId}`);
+      setFailures((prev) => prev.filter((f) => f.id !== selectedId));
+      setSelectedId(null);
+    } catch {
+      // silently fail
+    }
   }
 
   function openAdd() {
@@ -126,21 +96,32 @@ export function Failures() {
     setShowDialog(true);
   }
 
-  function handleSave() {
-    const newFailure: PrintFailure = {
-      id: String(Date.now()),
-      date: form.date,
-      reason: form.reason,
-      source: form.source,
-      orderId: form.source === "Order" ? form.orderId : undefined,
-      filamentLost: Number(form.filamentLost),
-      timeLost: Number(form.timeLost),
-      estCost: Number(form.filamentLost) * COST_PER_GRAM,
-      notes: form.notes,
-    };
-    setFailures((prev) => [...prev, newFailure]);
-    setSelectedId(newFailure.id);
-    setShowDialog(false);
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const body = {
+        date:                  form.date,
+        reason:                form.reason,
+        source:                form.source,
+        order_id:              form.order_id,
+        item_name:             form.item_name,
+        filament_wasted_grams: Number(form.filament_wasted_grams),
+        time_wasted_minutes:   Number(form.time_wasted_minutes),
+        description:           form.description,
+        color:                 "",
+        spool_id:              "",
+        printer_id:            "",
+        printer_name:          "",
+      };
+      const created = await api.post<PrintFailure>("/api/failures", body);
+      setFailures((prev) => [...prev, created]);
+      setSelectedId(created.id);
+      setShowDialog(false);
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -154,21 +135,20 @@ export function Failures() {
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={openAdd} style={{ backgroundColor: "#1e3a8a" }}>
-              <Plus /> Log Failure
+              <Plus size={14} className="mr-1" /> Log Failure
             </Button>
             <Button
-              size="sm"
-              variant="outline"
-              onClick={handleDelete}
-              disabled={!selectedId}
+              size="sm" variant="outline" onClick={handleDelete} disabled={!selectedId}
               style={{ borderColor: "#ef4444", color: "#ef4444" }}
             >
-              <Trash2 /> Delete
+              <Trash2 size={14} className="mr-1" /> Delete
+            </Button>
+            <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             </Button>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex gap-3 mt-3 flex-wrap">
           <Select value={filterReason} onValueChange={setFilterReason}>
             <SelectTrigger className="w-48 h-8 text-sm">
@@ -176,20 +156,17 @@ export function Failures() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Reasons</SelectItem>
-              {FAILURE_REASONS.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
+              {FAILURE_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
             </SelectContent>
           </Select>
 
           <Select value={filterSource} onValueChange={setFilterSource}>
-            <SelectTrigger className="w-36 h-8 text-sm">
+            <SelectTrigger className="w-44 h-8 text-sm">
               <SelectValue placeholder="All Sources" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Sources</SelectItem>
-              <SelectItem value="Manual">Manual</SelectItem>
-              <SelectItem value="Order">Order</SelectItem>
+              {FAILURE_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -201,13 +178,13 @@ export function Failures() {
           <Card style={{ backgroundColor: "#fff7ed", borderColor: "#fed7aa" }}>
             <CardContent className="p-4">
               <p className="text-xs font-medium mb-1" style={{ color: "#f59e0b" }}>Total Failures</p>
-              <p className="text-2xl font-bold" style={{ color: "#0f172a" }}>{filtered.length}</p>
+              <p className="text-2xl font-bold" style={{ color: "#0f172a" }}>{failures.length}</p>
             </CardContent>
           </Card>
           <Card style={{ backgroundColor: "#fff7ed", borderColor: "#fed7aa" }}>
             <CardContent className="p-4">
               <p className="text-xs font-medium mb-1" style={{ color: "#f59e0b" }}>Filament Lost</p>
-              <p className="text-2xl font-bold" style={{ color: "#0f172a" }}>{totalFilament} g</p>
+              <p className="text-2xl font-bold" style={{ color: "#0f172a" }}>{totalFilament.toFixed(0)} g</p>
             </CardContent>
           </Card>
           <Card style={{ backgroundColor: "#fff7ed", borderColor: "#fed7aa" }}>
@@ -225,64 +202,61 @@ export function Failures() {
       <div className="px-6 pb-6 flex-1 overflow-auto">
         <Card style={{ backgroundColor: "#fff", borderColor: "#e2e8f0" }}>
           <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b" style={{ backgroundColor: "#f8fafc" }}>
-                  {["Date", "Reason", "Source", "Filament Lost (g)", "Time (min)", "Est. Cost (EGP)", "Notes"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#64748b" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((f) => (
-                  <tr
-                    key={f.id}
-                    onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
-                    className="border-b cursor-pointer hover:bg-slate-50 transition-colors"
-                    style={{ backgroundColor: selectedId === f.id ? "#fffbeb" : undefined }}
-                  >
-                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#64748b" }}>{f.date}</td>
-                    <td className="px-4 py-3">
-                      <Badge
-                        className="text-xs"
-                        style={{ backgroundColor: "#fff7ed", color: "#f59e0b", border: "1px solid #fed7aa" }}
-                      >
-                        {f.reason}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      {f.source === "Order" ? (
-                        <span className="flex items-center gap-1.5">
-                          <Badge className="text-xs" style={{ backgroundColor: "#eff6ff", color: "#1e3a8a", border: "none" }}>
-                            Order
-                          </Badge>
-                          {f.orderId && (
-                            <span className="text-xs" style={{ color: "#64748b" }}>{f.orderId}</span>
-                          )}
-                        </span>
-                      ) : (
-                        <Badge className="text-xs" style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "none" }}>
-                          Manual
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="animate-spin size-6" style={{ color: "#1e3a8a" }} />
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b" style={{ backgroundColor: "#f8fafc" }}>
+                    {["Date", "Reason", "Source", "Filament Lost (g)", "Time (min)", "Est. Cost (EGP)", "Notes"].map((h) => (
+                      <th key={h} className="text-left px-4 py-3 font-medium whitespace-nowrap" style={{ color: "#64748b" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {failures.map((f) => (
+                    <tr
+                      key={f.id}
+                      onClick={() => setSelectedId(f.id === selectedId ? null : f.id)}
+                      className="border-b cursor-pointer hover:bg-slate-50 transition-colors"
+                      style={{ backgroundColor: selectedId === f.id ? "#fffbeb" : undefined }}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#64748b" }}>{f.date.slice(0, 10)}</td>
+                      <td className="px-4 py-3">
+                        <Badge className="text-xs" style={{ backgroundColor: "#fff7ed", color: "#f59e0b", border: "1px solid #fed7aa" }}>
+                          {f.reason}
                         </Badge>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 font-medium" style={{ color: "#0f172a" }}>{f.filamentLost}</td>
-                    <td className="px-4 py-3" style={{ color: "#0f172a" }}>{f.timeLost}</td>
-                    <td className="px-4 py-3 font-medium" style={{ color: "#ef4444" }}>{f.estCost.toFixed(2)}</td>
-                    <td className="px-4 py-3 max-w-[180px] truncate" style={{ color: "#64748b" }}>{f.notes || "—"}</td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center" style={{ color: "#64748b" }}>
-                      No failures recorded
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className="text-xs" style={{ backgroundColor: "#f1f5f9", color: "#64748b", border: "none" }}>
+                          {f.source}
+                        </Badge>
+                        {f.order_id && (
+                          <span className="ml-1.5 text-xs" style={{ color: "#64748b" }}>{f.order_id}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-medium" style={{ color: "#0f172a" }}>{f.filament_wasted_grams.toFixed(0)}</td>
+                      <td className="px-4 py-3" style={{ color: "#0f172a" }}>{f.time_wasted_minutes}</td>
+                      <td className="px-4 py-3 font-medium" style={{ color: "#ef4444" }}>
+                        {(f.total_loss ?? 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 max-w-[180px] truncate" style={{ color: "#64748b" }}>
+                        {f.description || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                  {failures.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center" style={{ color: "#64748b" }}>
+                        No failures recorded
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </Card>
       </div>
@@ -301,35 +275,34 @@ export function Failures() {
               </div>
               <div className="space-y-1.5">
                 <Label>Source</Label>
-                <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v as "Manual" | "Order" })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={form.source} onValueChange={(v) => setForm({ ...form, source: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Manual">Manual</SelectItem>
-                    <SelectItem value="Order">Order</SelectItem>
+                    {FAILURE_SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {form.source === "Order" && (
-              <div className="space-y-1.5">
-                <Label>Order ID</Label>
-                <Input value={form.orderId} onChange={(e) => setForm({ ...form, orderId: e.target.value })} placeholder="ORD-001" />
+            {form.source === "Customer Order" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Order ID</Label>
+                  <Input value={form.order_id} onChange={(e) => setForm({ ...form, order_id: e.target.value })} placeholder="Order ID" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Item Name</Label>
+                  <Input value={form.item_name} onChange={(e) => setForm({ ...form, item_name: e.target.value })} placeholder="Print item name" />
+                </div>
               </div>
             )}
 
             <div className="space-y-1.5">
               <Label>Reason</Label>
-              <Select value={form.reason} onValueChange={(v) => setForm({ ...form, reason: v as FailureReason })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={form.reason} onValueChange={(v) => setForm({ ...form, reason: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {FAILURE_REASONS.map((r) => (
-                    <SelectItem key={r} value={r}>{r}</SelectItem>
-                  ))}
+                  {FAILURE_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -337,22 +310,23 @@ export function Failures() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Filament Lost (g)</Label>
-                <Input type="number" value={form.filamentLost} onChange={(e) => setForm({ ...form, filamentLost: e.target.value })} placeholder="0" min="0" />
+                <Input type="number" value={form.filament_wasted_grams} onChange={(e) => setForm({ ...form, filament_wasted_grams: e.target.value })} placeholder="0" min="0" />
               </div>
               <div className="space-y-1.5">
                 <Label>Time Lost (min)</Label>
-                <Input type="number" value={form.timeLost} onChange={(e) => setForm({ ...form, timeLost: e.target.value })} placeholder="0" min="0" />
+                <Input type="number" value={form.time_wasted_minutes} onChange={(e) => setForm({ ...form, time_wasted_minutes: e.target.value })} placeholder="0" min="0" />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label>Notes</Label>
-              <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="What happened?" rows={2} />
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What happened?" rows={2} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} style={{ backgroundColor: "#1e3a8a" }}>
+            <Button onClick={handleSave} disabled={saving} style={{ backgroundColor: "#1e3a8a" }}>
+              {saving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
               Log Failure
             </Button>
           </DialogFooter>
