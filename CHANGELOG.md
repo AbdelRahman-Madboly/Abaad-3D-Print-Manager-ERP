@@ -8,6 +8,31 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [6.0.0] — 2026-06-17
+
+### Added
+
+**Phase 10 (React full-stack UI)**
+- FastAPI bridge (`api/`) — 28 authenticated REST endpoints across 9 routers
+  (auth, orders, customers, filament, printers, expenses, failures, settings, dashboard)
+- In-memory Bearer-token session auth backed by the existing Python service layer
+- React 18 + TypeScript + Vite 6 frontend (`frontend/`) with shadcn/ui components,
+  Tailwind CSS v4, and Recharts for dashboard charts
+- Isometric 3D cube favicon (SVG, Abaad blue palette)
+- Collapsible sidebar navigation; show/hide password toggle on login
+- `frontend/src/lib/api.ts` — typed fetch wrapper with automatic Bearer-token injection
+- `frontend/src/lib/auth-context.tsx` — React AuthContext + `useAuth()` hook
+- All 10 screens wired to live data: Login, Dashboard, Orders, Customers,
+  Filament, Printers, Expenses, Failures, Settings, Setup Wizard
+- Authenticated PDF download via blob URL trick (`downloadFile()`)
+- `make dev` target — starts uvicorn (:8000) and Vite (:5173) concurrently
+
+### Changed
+- `make dev` is now the primary entry point; `python3 main.py` still runs the legacy Tkinter UI
+- Phase docs reorganised into `docs/phases/Prompt/` and `docs/phases/Report/`
+
+---
+
 ## [5.0.0] — 2026-06-17
 
 ### Added
