@@ -103,6 +103,7 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 7 | PDF service polish + code documentation | ✅ DONE — 199 passed / 1 skipped / 0 failed |
 | 8 | Packaging (PyInstaller) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
 | 9 | Release prep (changelog, versioning, final QA) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
+| 10 | React UI/UX redesign (shadcn/ui + FastAPI bridge) | **NEXT** |
 
 ---
 
