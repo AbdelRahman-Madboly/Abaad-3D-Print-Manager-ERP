@@ -97,31 +97,28 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 | 1 | Core stabilization | ✅ DONE — 165 passed / 1 skipped / 0 failed |
 | 2 | Tenant brand system (de-branding + full wizard) | ✅ DONE — 190 passed / 1 skipped / 0 failed |
 | 3 | Dashboard & analytics verification | ✅ DONE — 194 passed / 1 skipped / 0 failed |
-| 4 | Git workflow, CI, version tagging | **NEXT** |
-| 5 | Launchers (Ubuntu .desktop + Windows) | pending |
-| 6 | Cross-platform polish (fonts, icons, UI/UX) | pending |
-| 7 | PDF service polish + code documentation | pending |
-| 8 | Packaging (PyInstaller) | pending |
+| 4 | Git workflow, CI, version tagging | ✅ DONE — 194 passed / 1 skipped / 0 failed |
+| 5 | Launchers (Ubuntu .desktop + Windows) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
+| 6 | Cross-platform polish (fonts, icons, UI/UX) | ✅ DONE — 194 passed / 1 skipped / 0 failed |
+| 7 | PDF service polish + code documentation | ✅ DONE — 199 passed / 1 skipped / 0 failed |
+| 8 | Packaging (PyInstaller) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
+| 9 | Release prep (changelog, versioning, final QA) | ✅ DONE — 199 passed / 1 skipped / 0 failed |
+| 10 | React UI/UX redesign (shadcn/ui + FastAPI bridge) | ✅ DONE — CI green, pnpm build clean |
 
 ---
 
 ## Known issues carried forward
 
 - ~~`auth_manager.py` line ~237 prints `admin / admin123` to stdout~~ — fixed in Phase 2.
-- `data/abaad_v5.db` is tracked by git (`.gitignore` only excludes the old v4 JSON).
-  The live DB must be gitignored. Fix in Phase 4.
-- `generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice (lines 145, 165).
-  Fix in Phase 7 (PDF polish).
+- ~~`data/abaad_v5.db` is tracked by git~~ — fixed in Phase 9; removed via `git rm --cached`.
+- ~~`generate_text_receipt()` in `pdf_service.py` hardcodes `"EGP"` twice~~ — fixed in Phase 7.
 - `src/ui/context_menu.py` may be dead code — `analytics_tab.py` (deleted in Phase 3)
-  was the only known importer. Verify in Phase 6 cross-platform audit before deleting.
-- `default_cost_per_gram` is saved to the `settings` table by the wizard (Step 4) but is
-  **not** in `DEFAULT_SETTINGS`. Any service that reads it must call
-  `get_setting("default_cost_per_gram", default=str(config.DEFAULT_COST_PER_GRAM))`.
-  Likely consumer is Phase 7 (PDF / cost logic).
+  was the only known importer. Verify before deleting in a future phase.
+- ~~`default_cost_per_gram` is saved to the `settings` table by the wizard but is not in
+  `DEFAULT_SETTINGS`~~ — fixed in Phase 7; key added to `DEFAULT_SETTINGS` in `config.py`.
 - Wizard duplicate-spool guard: if the app crashes after Step 2 commits filament spools
   but before Step 4 sets `setup_complete = "1"`, re-running the wizard will seed duplicate
-  spools. A future guard should check for existing spools before creating. Acceptable
-  for current scope; note for Phase 6 or later.
+  spools. A future guard should check for existing spools before creating.
 
 ---
 
@@ -130,19 +127,22 @@ The schema uses `is_deleted` (not `deleted`) for soft deletes on orders.
 ```bash
 cd ~/projects/products/Abaad-3D-ERP
 
-# Run the app
+# Full-stack dev (uvicorn :8000 + Vite :5173) — Phase 10+
+make dev
+
+# Legacy Tkinter UI (pre-Phase 10)
 python3 main.py
 
-# Run tests (always from repo root, using conda base or venv with pytest)
+# Python tests (always from repo root)
 python3 -m pytest -q
 
-# Run a single test file
-python3 -m pytest tests/test_order_service.py -v
+# Frontend type-check + build
+cd frontend && pnpm tsc --noEmit && pnpm build
 ```
 
-**Dev environment note:** no venv exists yet (Phase 5 adds it). Run tests
-with `python3 -m pytest` using the conda base env which has pytest installed.
-After Phase 5, use `.venv/bin/python -m pytest`.
+**Dev environment note:** `.venv/` exists at repo root (created in Phase 8).
+Run `make install` or `pip install -e ".[dev]"` to install all dependencies.
+Use `make test` or `python3 -m pytest -q` to run the test suite.
 
 ---
 

@@ -8,9 +8,11 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [5.0.0] — 2026-06-16
+## [5.0.0] — 2026-06-17
 
 ### Added
+
+**Phases 0–4 (core foundation)**
 - Unified Dashboard tab with Action Center, Headline Numbers, Charts,
   Printer Utilization, and Detailed Breakdowns sections
 - First-run setup wizard (4 steps: company info, filament, printer, cost defaults)
@@ -24,6 +26,35 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 - `get_print_items_totals()` — single aggregate query for total weight/time printed
 - GitHub Actions CI (lint with ruff + test with pytest on push/PR to develop/main)
 
+**Phase 5 (launchers)**
+- Ubuntu `.desktop` launcher (`abaad-erp.desktop`) for application menu integration
+- Windows `Launch_App.bat` launcher
+- `scripts/install.py` cross-platform venv + dependency installer
+
+**Phase 6 (UI polish)**
+- `Tooltip` widget — hover tooltips on icon-only action buttons
+- `ScrollableFrame` widget — canvas-backed scrollable container; applied to
+  Settings and Dashboard tabs
+- Minimum window size (`900×700`) enforced at startup; default geometry `1200×750`
+- Empty-state placeholder labels in all tabs when no data is present
+
+**Phase 7 (PDF polish + documentation)**
+- PDF footer drawn via `onFirstPage`/`onLaterPages` canvas callbacks — appears on
+  every page of multi-page PDFs, not just the first
+- `default_cost_per_gram` added to `DEFAULT_SETTINGS` so callers can rely on
+  `db.get_setting("default_cost_per_gram")` always returning a value
+- Google-style docstrings added to all public methods across `src/core/`,
+  `src/auth/`, `src/services/`, and `src/ui/` (app.py, widgets.py)
+- PDF generation test suite (`tests/test_pdf_service.py`) using `pypdf>=5.0`
+
+**Phase 8 (packaging)**
+- PyInstaller Linux bundle — `abaad-erp.spec` (6.x API: `PYZ(a.pure)`, no cipher);
+  produces `dist/abaad-erp/` (~165 MB) running on Ubuntu 24.04 without Python
+- `scripts/run_bundle_linux.sh` — bundle launcher with existence check
+- `Makefile` — `venv / install / test / lint / build / run / run-bundle / clean`
+- `pyinstaller>=6.0` added to dev extras in `pyproject.toml`
+- `data/.gitkeep` ensures data directory is present in bundle for DB creation
+
 ### Fixed
 - `auth_manager.py` no longer prints `admin / admin123` to stdout (now `log.info`)
 - Settings tab DB access (was calling nonexistent `execute_query`)
@@ -36,6 +67,10 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 - `config.DEFAULT_SETTINGS` missing required keys (caused crash on first run)
 - `COMPANY` dict neutralized — no hardcoded business contact info in source
 - `pyproject.toml` build backend corrected (`setuptools.build_meta`)
+- `generate_text_receipt()` hardcoded `"EGP"` — now reads `currency_symbol` from
+  order context dict, falling back to `"EGP"` only when not set
+- `default_cost_per_gram` absent from `DEFAULT_SETTINGS` — caused `KeyError` on
+  fresh installs before wizard completion
 
 ### Removed
 - v4 migration script and tests

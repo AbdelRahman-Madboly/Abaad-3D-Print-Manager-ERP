@@ -23,15 +23,23 @@ ocr = [
 charts = [
     "matplotlib>=3.9.0",
 ]
+api = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+]
 all = [
     "Pillow>=10.4.0",
     "pytesseract>=0.3.13",
     "matplotlib>=3.9.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
 ]
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
     "ruff>=0.4.0",
+    "pypdf>=5.0.0",
+    "pyinstaller>=6.0",
 ]
 
 [project.scripts]

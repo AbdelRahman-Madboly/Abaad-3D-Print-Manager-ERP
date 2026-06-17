@@ -45,5 +45,18 @@ desktop.ini
 
 # App-specific
 data/abaad_v4.db.json
+data/*.db
+data/users.json
 exports/
 *.log
+
+# PyInstaller
+*.spec.bak
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.pnpm-store/
+
+# Figma design output (source for frontend/ — not committed)
+docs/ui-design/Abaad_ERP_React_Component_Tree/

@@ -95,9 +95,13 @@ DEFAULT_COLORS: list[str] = [
 
 DEFAULT_SETTINGS: dict = {
     "company_name":          COMPANY["name"],
+    "company_subtitle":      "3D Printing Services",
     "company_phone":         COMPANY["phone"],
     "company_address":       COMPANY["address"],
+    "company_tagline":       COMPANY["tagline"],
+    "company_social":        COMPANY["social"],
     "default_rate_per_gram": str(DEFAULT_RATE_PER_GRAM),
+    "default_cost_per_gram": str(DEFAULT_COST_PER_GRAM),
     "next_order_number":     "1",
     "deposit_percent":       "50",
     "quote_validity_days":   "7",
@@ -105,8 +109,6 @@ DEFAULT_SETTINGS: dict = {
     "currency_symbol":       "EGP",
     "company_logo_path":     "",
     "setup_complete":        "0",
-    "company_tagline":       COMPANY["tagline"],
-    "company_social":        COMPANY["social"],
 }
 
 # ---------------------------------------------------------------------------

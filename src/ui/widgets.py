@@ -22,6 +22,22 @@ from typing import Callable, Optional
 from src.ui.theme import Colors, Fonts
 
 # ---------------------------------------------------------------------------
+# empty_state_label
+# ---------------------------------------------------------------------------
+
+def empty_state_label(parent, message: str, bg: str) -> tk.Label:
+    """Return a centered label for empty-data states."""
+    return tk.Label(
+        parent,
+        text=message,
+        bg=bg,
+        fg=Colors.TEXT_SECONDARY,
+        font=Fonts.BODY if hasattr(Fonts, "BODY") else Fonts.DEFAULT,
+        wraplength=400,
+        justify="center",
+    )
+
+# ---------------------------------------------------------------------------
 # SearchEntry
 # ---------------------------------------------------------------------------
 
@@ -232,6 +248,12 @@ class ScrollableFrame(ttk.Frame):
         canvas.bind_all(
             "<MouseWheel>",
             lambda e: canvas.yview_scroll(-1 * (e.delta // 120), "units"))
+        canvas.bind_all(
+            "<Button-4>",
+            lambda e: canvas.yview_scroll(-1, "units"))
+        canvas.bind_all(
+            "<Button-5>",
+            lambda e: canvas.yview_scroll(1, "units"))
 
 
 # ---------------------------------------------------------------------------
@@ -270,15 +292,19 @@ class ScrollableTreeview(ttk.Frame):
 
     # Delegate common Treeview methods for convenience
     def insert(self, *args, **kwargs):
+        """Delegate to ``Treeview.insert``."""
         return self.tree.insert(*args, **kwargs)
 
     def delete(self, *args):
+        """Delegate to ``Treeview.delete``."""
         return self.tree.delete(*args)
 
     def get_children(self):
+        """Delegate to ``Treeview.get_children``."""
         return self.tree.get_children()
 
     def selection(self):
+        """Delegate to ``Treeview.selection``."""
         return self.tree.selection()
 
 
@@ -323,12 +349,15 @@ class FormRow(ttk.Frame):
         self.entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
     def get(self) -> str:
+        """Return the stripped string value of the entry."""
         return self.var.get().strip()
 
     def set(self, value: str) -> None:
+        """Set the entry value."""
         self.var.set(value)
 
     def focus(self) -> None:
+        """Move keyboard focus to the entry widget."""
         self.entry.focus_set()
 
 
@@ -364,6 +393,7 @@ class ActionButton(tk.Button):
         self.bind("<Leave>", lambda _: self.config(bg=self._color))
 
     def set_state(self, enabled: bool) -> None:
+        """Enable or disable the button."""
         self.config(state="normal" if enabled else "disabled")
 
 
@@ -430,7 +460,7 @@ class ConfirmDialog:
         body = ttk.Frame(win, padding=20)
         body.pack(fill=tk.BOTH, expand=True)
 
-        tk.Label(body, text=icon, font=("Segoe UI", 24),
+        tk.Label(body, text=icon, font=Fonts.TITLE,
                  bg=Colors.BG).pack()
         ttk.Label(body, text=title,
                   style="Header.TLabel").pack(pady=(4, 0))
@@ -457,6 +487,39 @@ class ConfirmDialog:
     def _confirm(self, win) -> None:
         self.confirmed = True
         win.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Tooltip
+# ---------------------------------------------------------------------------
+
+class Tooltip:
+    """Simple hover tooltip for any widget."""
+
+    def __init__(self, widget: tk.Widget, text: str) -> None:
+        self._widget = widget
+        self._text = text
+        self._tip: Optional[tk.Toplevel] = None
+        widget.bind("<Enter>", self._show)
+        widget.bind("<Leave>", self._hide)
+
+    def _show(self, _event=None) -> None:
+        x = self._widget.winfo_rootx() + 20
+        y = self._widget.winfo_rooty() + self._widget.winfo_height() + 4
+        self._tip = tk.Toplevel(self._widget)
+        self._tip.wm_overrideredirect(True)
+        self._tip.wm_geometry(f"+{x}+{y}")
+        tk.Label(
+            self._tip, text=self._text,
+            bg="#ffffe0", fg="#333333",
+            font=("TkDefaultFont", 9),
+            relief="solid", borderwidth=1, padx=4, pady=2,
+        ).pack()
+
+    def _hide(self, _event=None) -> None:
+        if self._tip:
+            self._tip.destroy()
+            self._tip = None
 
 
 # ---------------------------------------------------------------------------

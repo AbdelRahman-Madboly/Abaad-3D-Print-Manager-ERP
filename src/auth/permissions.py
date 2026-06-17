@@ -12,11 +12,15 @@ from typing import Dict, List
 
 
 class UserRole(str, Enum):
+    """Application user roles. Values match what is stored in the DB."""
+
     ADMIN = "Admin"
     USER  = "User"
 
 
 class Permission(str, Enum):
+    """Fine-grained permission tokens checked by AuthManager and UI guards."""
+
     # Orders
     CREATE_ORDER  = "create_order"
     VIEW_ORDER    = "view_order"
