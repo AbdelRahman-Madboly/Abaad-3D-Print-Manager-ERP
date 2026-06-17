@@ -1,6 +1,6 @@
 # Phase 0 — Repo Audit & Honest Baseline
 > **Type:** investigation only. Zero code changes.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Goal:** know exactly what exists and what works before touching anything.
 
 ---

@@ -88,7 +88,7 @@ Targets: `venv`, `install`, `test`, `lint`, `run`, `build`, `run-bundle`, `clean
 | `data/.gitkeep` | New — ensures data dir present in bundle |
 | `Makefile` | New — developer workflow shortcuts |
 | `.gitignore` | Added `*.spec.bak` |
-| `docs/CLAUDE.md` | Phase 8 marked ✅ DONE |
+| `docs/DEVELOPER.md` | Phase 8 marked ✅ DONE |
 
 ---
 

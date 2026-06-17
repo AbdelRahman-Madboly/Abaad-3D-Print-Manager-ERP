@@ -1,6 +1,6 @@
 # Phase 7 — PDF Service Polish & Code Documentation
 > **Type:** polish + documentation. No new features.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 6 complete.
 > **Branch:** `feat/phase-7-pdf-docs` off `develop`
 

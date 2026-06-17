@@ -1,7 +1,7 @@
-# CLAUDE.md — Abaad ERP
-> **Read this file at the start of every Claude Code session, before touching
-> anything.** It is the single source of truth for project context, rules,
-> current status, and how to find your task.
+# DEVELOPER.md — Abaad ERP
+> **Read this file at the start of every development session.**
+> It is the single source of truth for project context, rules,
+> current status, and architecture.
 
 ---
 
@@ -49,7 +49,7 @@ Abaad-3D-ERP/
 │   └── utils/          helpers.py (format_currency, …)
 ├── tests/              one file per service/tab, all use :memory: DB
 ├── docs/               all planning, phase prompts, reports — YOU ARE HERE
-│   ├── CLAUDE.md       ← this file
+│   ├── DEVELOPER.md    ← this file
 │   ├── MASTER-PLAN.md
 │   ├── phases/         PHASE-N-PROMPT.md + PHASE-N-REPORT.md
 │   └── skills/         ABAAD-SKILL.md

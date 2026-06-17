@@ -1,6 +1,6 @@
 # Phase 4.5 — Merge Verification & Branding Recon
 > **Type:** verification + targeted fixes. Minimal code change.
-> **Claude Code session:** read CLAUDE.md first, then this file.
+> **development session:** read DEVELOPER.md first, then this file.
 
 ---
 

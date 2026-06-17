@@ -1,6 +1,6 @@
 # Phase 6 — Cross-Platform Polish & UI/UX Audit
 > **Type:** polish + audit. Small targeted fixes, no new features.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 5 complete, launchers working.
 > **Branch:** `fix/phase-6-polish` off `develop`
 

@@ -1,6 +1,6 @@
 # Phase 4 — Git Workflow, CI & Version Tagging
 > **Type:** tooling + process. No app feature changes.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 3 complete — `pytest -q` baseline is **194 passed / 1 skipped / 0 failed**.
 > **Branch:** `chore/phase-4-ci-workflow` off `develop`
 
@@ -262,7 +262,7 @@ DISPLAY="" pytest -q       # simulate CI headless environment
 
 ## Architecture rules
 
-See `docs/CLAUDE.md` — never violate these.
+See `docs/DEVELOPER.md` — never violate these.
 ```
 
 ### Task 6 — Tag the current state

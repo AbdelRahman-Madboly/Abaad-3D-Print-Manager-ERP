@@ -1,8 +1,6 @@
 # Abaad ERP — Refactor Master Plan
 > Single source of truth for planning. Updated after every phase.
-> Implementation happens via Claude Code locally against the real repo.
-> Each phase produces a Completion Report the architect reviews before
-> issuing the next prompt.
+> Each phase produces a Completion Report reviewed before the next phase begins.
 
 ---
 

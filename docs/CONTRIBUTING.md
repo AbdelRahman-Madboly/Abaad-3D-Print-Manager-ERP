@@ -80,4 +80,4 @@ DISPLAY="" pytest -q       # simulate CI headless environment
 
 ## Architecture rules
 
-See `docs/CLAUDE.md` — never violate these.
+See `docs/DEVELOPER.md` — never violate these.

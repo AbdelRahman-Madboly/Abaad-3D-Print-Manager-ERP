@@ -89,6 +89,6 @@ pytest -q → 194 passed / 1 skipped / 0 failed
 - The `TooltipMixin` class in `widgets.py` predates the new `Tooltip` class. Both work;
   `Tooltip` is simpler to use standalone. Could consolidate in Phase 8.
 - `context_menu.py` is imported by `orders_tab.py` — it may or may not be dead code.
-  Original CLAUDE.md note said to verify in Phase 6 before deleting. Confirmed it IS
+  Original DEVELOPER.md note said to verify in Phase 6 before deleting. Confirmed it IS
   still used: `from src.ui.context_menu import bind_treeview_menu` in orders_tab.
   Not dead code — can remove from known-issues list.

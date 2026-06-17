@@ -1,5 +1,5 @@
-# ABAAD-SKILL.md — Claude Code Working Guide
-> Read this alongside CLAUDE.md at the start of every Claude Code session.
+# ABAAD-SKILL.md — Developer Working Guide
+> Read this alongside DEVELOPER.md at the start of every development session.
 > It is a reference, not a task list.
 
 ---

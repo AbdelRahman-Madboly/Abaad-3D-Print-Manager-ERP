@@ -18,7 +18,7 @@ from git tracking, and the GitHub Release created from the annotated tag.
 | 4 — Full test suite | ✅ 199 passed / 1 skipped / 0 failed |
 | 5 — Ruff clean-pass | ✅ All checks passed |
 | 6 — Tag v5.0.0 + GitHub Release | ✅ |
-| 7 — Update docs/CLAUDE.md | ✅ |
+| 7 — Update docs/DEVELOPER.md | ✅ |
 
 ---
 
@@ -32,7 +32,7 @@ from git tracking, and the GitHub Release created from the annotated tag.
 | `data/users.json` | Removed from git tracking (`git rm --cached`) |
 | `docs/phases/PHASE-9-PROMPT.md` | New — phase prompt |
 | `docs/phases/PHASE-9-REPORT.md` | New — this file |
-| `docs/CLAUDE.md` | Phase 9 ✅ DONE; DB known issue closed |
+| `docs/DEVELOPER.md` | Phase 9 ✅ DONE; DB known issue closed |
 
 ---
 
@@ -61,7 +61,7 @@ from git tracking, and the GitHub Release created from the annotated tag.
 | `ruff check` exits clean | ✅ |
 | `git tag v5.0.0` exists and pushed | ✅ |
 | GitHub Release `v5.0.0` created | ✅ |
-| `docs/CLAUDE.md` Phase 9 marked done | ✅ |
+| `docs/DEVELOPER.md` Phase 9 marked done | ✅ |
 
 ---
 

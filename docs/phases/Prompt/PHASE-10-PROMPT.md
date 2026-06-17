@@ -1,6 +1,6 @@
 # Phase 10 — React UI/UX Redesign
 > **Type:** new frontend. The Python/Tkinter UI is replaced with React + shadcn/ui.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 9 complete. Figma design generated from `docs/ui-design/ABAAD-DESIGN-BRIEF.md`.
 > **Branch:** `feat/phase-10-react-ui` off `develop`
 

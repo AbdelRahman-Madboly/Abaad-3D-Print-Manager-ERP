@@ -1,6 +1,6 @@
 # Phase 9 — Release Prep (Changelog, Versioning, Final QA)
 > **Type:** release engineering. Minimal app code changes.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 8 complete. Linux bundle working.
 > **Branch:** `chore/phase-9-release-prep` off `develop`
 
@@ -71,7 +71,7 @@ if correct. If not, set it now.
 
 ### Task 3 — Fix the live DB gitignore gap
 
-The known issue in `CLAUDE.md`:
+The known issue in `DEVELOPER.md`:
 > `data/abaad_v5.db` is tracked by git — `.gitignore` only excludes `data/*.db`
 > but the file was committed before the rule existed.
 
@@ -121,7 +121,7 @@ gh release create v5.0.0 \
 > Note: we tag `develop` (not `main`) for now — `main` promotion is a
 > future step when the app is deployed to a real customer.
 
-### Task 7 — Update `docs/CLAUDE.md`
+### Task 7 — Update `docs/DEVELOPER.md`
 
 - Mark Phase 9 ✅ DONE
 - Remove the `data/abaad_v5.db` known issue (fixed in Task 3)
@@ -138,7 +138,7 @@ gh release create v5.0.0 \
 - [ ] `ruff check` exits clean.
 - [ ] `git tag v5.0.0` exists and is pushed.
 - [ ] GitHub Release `v5.0.0` created.
-- [ ] `docs/CLAUDE.md` Phase 9 marked done.
+- [ ] `docs/DEVELOPER.md` Phase 9 marked done.
 
 ---
 

@@ -137,7 +137,7 @@ concern — the dev environment is not documented anywhere in the repo.
 ## File Tree
 
 ```
-./docs/CLAUDE.md
+./docs/DEVELOPER.md
 ./docs/MASTER-PLAN.md
 ./docs/phases/PHASE-0-PROMPT.md
 ./docs/phases/PHASE-1-PROMPT.md
@@ -210,7 +210,7 @@ concern — the dev environment is not documented anywhere in the repo.
 ./tests/test_printer_service.py
 ```
 
-**Files in CLAUDE.md layout that do NOT exist on disk:**
+**Files in DEVELOPER.md layout that do NOT exist on disk:**
 - `abaad-erp.desktop` — listed in repo root layout, does not exist
 - `scripts/install_linux.sh` — listed in ABAAD-SKILL.md file ownership table, does not exist
 - `scripts/install_windows.bat` — listed in ABAAD-SKILL.md file ownership table, does not exist
@@ -218,11 +218,11 @@ concern — the dev environment is not documented anywhere in the repo.
 **Files on disk NOT mentioned in planning docs:**
 - `requirements.txt` — exists at root (pins exact versions for reportlab, Pillow, pytesseract, matplotlib)
 - `scripts/install.py` — cross-platform Python installer (replaces install_linux.sh + install_windows.bat)
-- `src/ui/context_menu.py` — right-click context menu widget, not mentioned in CLAUDE.md
-- `src/ui/tabs/analytics_tab.py` — visual analytics tab (mentioned in CLAUDE.md phase list but not layout)
-- `src/ui/tabs/stats_tab.py` — statistics dashboard tab, not in CLAUDE.md layout
+- `src/ui/context_menu.py` — right-click context menu widget, not mentioned in DEVELOPER.md
+- `src/ui/tabs/analytics_tab.py` — visual analytics tab (mentioned in DEVELOPER.md phase list but not layout)
+- `src/ui/tabs/stats_tab.py` — statistics dashboard tab, not in DEVELOPER.md layout
 - `FileTree.md` — snapshot of file tree at repo root, not mentioned anywhere
-- `tests/test_dashboard_tab.py`, `tests/test_models.py`, `tests/test_pdf_service.py`, `tests/test_phase2.py` — test files not listed in CLAUDE.md
+- `tests/test_dashboard_tab.py`, `tests/test_models.py`, `tests/test_pdf_service.py`, `tests/test_phase2.py` — test files not listed in DEVELOPER.md
 
 ---
 
@@ -306,7 +306,7 @@ are also tenant-specific.
 
 **Additional issues:**
 - Comment on line 54 says `"Phase 4: PrinterService is built first…"` — stale
-  phase reference. CLAUDE.md uses a different phase numbering now.
+  phase reference. DEVELOPER.md uses a different phase numbering now.
 - `auth.initialise(db)` is called but no setup wizard is triggered before the
   login loop, so a fresh database (no users) will show the login screen with no
   way for a new user to configure the app.
@@ -636,7 +636,7 @@ dev     = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
 | `scripts/install.py` | Yes | Cross-platform: checks Python 3.10+, creates `venv/`, installs `requirements.txt`, prints success summary | Prints `admin / admin123` default credentials in plain text |
 | `launch.sh` | Yes | Activates `venv/`, runs `python main.py` | No venv exists until setup.sh is run; no error if python version is wrong inside venv |
 | `Launch_App.bat` | Yes | Activates venv (CPython or MSYS2 layout), runs `python main.py` | Same — no venv until SETUP.bat is run |
-| `abaad-erp.desktop` | **No** | Ubuntu .desktop entry | File does not exist — referenced in CLAUDE.md layout as present in repo root |
+| `abaad-erp.desktop` | **No** | Ubuntu .desktop entry | File does not exist — referenced in DEVELOPER.md layout as present in repo root |
 | `scripts/install_linux.sh` | **No** | — | Referenced in ABAAD-SKILL.md file ownership table; replaced by `scripts/install.py` |
 | `scripts/install_windows.bat` | **No** | — | Referenced in ABAAD-SKILL.md file ownership table; replaced by `scripts/install.py` |
 
@@ -683,7 +683,7 @@ dev     = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
    to be removed. Both constants are unread in any current code. Safe to delete
    in Phase 1.
 
-5. **`abaad-erp.desktop` missing:** The `.desktop` file is in CLAUDE.md's repo
+5. **`abaad-erp.desktop` missing:** The `.desktop` file is in DEVELOPER.md's repo
    layout but does not exist. It's a Phase 5 deliverable — just needs to be
    created (not a Phase 1 blocker).
 
@@ -696,7 +696,7 @@ dev     = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
    against this with `INSERT OR REPLACE`.
 
 8. **`src/ui/tabs/stats_tab.py`:** This file exists on disk but is not in
-   CLAUDE.md's repo layout and not mentioned in any phase prompt. Needs review
+   DEVELOPER.md's repo layout and not mentioned in any phase prompt. Needs review
    to determine if it's active, dead, or a duplicate of `analytics_tab.py`.
 
 9. **Dev environment not self-contained:** No venv in the repo, `pytest` not in

@@ -1,6 +1,6 @@
 # Phase 2 — Tenant Brand System
 > **Type:** feature + refactor. This is the core product promise.
-> **Session start:** `cat docs/CLAUDE.md` then `docs/skills/ABAAD-SKILL.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then `docs/skills/ABAAD-SKILL.md` then this file.
 > **Prerequisite:** Phase 1 complete — 165 passed / 0 failed.
 > **Branch:** `feature/phase-2-tenant-brand` off `develop`
 

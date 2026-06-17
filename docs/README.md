@@ -5,10 +5,10 @@ The live source code lives in `src/`, `api/`, and `frontend/`.
 
 ---
 
-## How to start a Claude Code session
+## Developer quick start
 
 ```bash
-cat docs/CLAUDE.md   # always first — project rules and architecture
+cat docs/DEVELOPER.md   # always first — project rules and architecture
 ```
 
 ---
@@ -37,7 +37,7 @@ cat docs/CLAUDE.md   # always first — project rules and architecture
 
 ```
 docs/
-├── CLAUDE.md              ← Root developer context. Read first in every session.
+├── DEVELOPER.md           ← Root developer context. Read first in every session.
 ├── CONTRIBUTING.md        ← Branch strategy and commit conventions
 ├── MASTER-PLAN.md         ← Overall plan and rationale
 ├── README.md              ← This file

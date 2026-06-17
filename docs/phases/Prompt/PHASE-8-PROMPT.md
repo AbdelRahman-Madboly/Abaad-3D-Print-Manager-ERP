@@ -1,6 +1,6 @@
 # Phase 8 — Packaging (PyInstaller)
 > **Type:** build tooling. No app code changes.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 7 complete. App fully working and documented.
 > **Branch:** `chore/phase-8-packaging` off `develop`
 

@@ -1,6 +1,6 @@
 # Phase 1 — Core Stabilization
 > **Type:** bug fixes + test cleanup. No new features.
-> **Session start:** `cat docs/CLAUDE.md` then this file.
+> **Session start:** `cat docs/DEVELOPER.md` then this file.
 > **Prerequisite:** Phase 0 report complete. All findings are known.
 > **Branch:** `fix/phase-1-stabilization` off `develop`
 
