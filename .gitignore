@@ -58,5 +58,10 @@ frontend/node_modules/
 frontend/dist/
 frontend/.pnpm-store/
 
-# Figma design output (source for frontend/ — not committed)
-docs/ui-design/Abaad_ERP_React_Component_Tree/
+# Internal development docs (phases, planning, design briefs — not for users)
+docs/phases/
+docs/skills/
+docs/ui-design/
+docs/DEVELOPER.md
+docs/MASTER-PLAN.md
+docs/README.md
