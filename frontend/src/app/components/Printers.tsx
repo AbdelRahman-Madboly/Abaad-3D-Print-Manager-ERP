@@ -1,100 +1,73 @@
-import { useState } from "react";
-import {
-  Printer,
-  Plus,
-  Pencil,
-  Wrench,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Printer, Plus, Pencil, Wrench, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Progress } from "./ui/progress";
+import { api } from "@/lib/api";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface PrinterItem {
   id: string;
   name: string;
   model: string;
-  purchasePrice: number;
-  powerKwh: number;
-  nozzleCost: number;
-  nozzleLifeGrams: number;
-  nozzleUsedGrams: number;
-  lifetimePrintedGrams: number;
-  status: "Active" | "Inactive";
+  purchase_price: number;
+  lifetime_kg: number;
+  total_printed_grams: number;
+  nozzle_cost: number;
+  nozzle_lifetime_grams: number;
+  current_nozzle_grams: number;
+  electricity_rate_per_hour: number;
+  is_active: boolean;
+  notes: string;
+  depreciation_per_gram: number;
+  nozzle_usage_percent: number;
 }
-
-const MOCK_PRINTERS: PrinterItem[] = [
-  {
-    id: "1",
-    name: "Printer 1",
-    model: "Bambu X1C",
-    purchasePrice: 15000,
-    powerKwh: 0.4,
-    nozzleCost: 35,
-    nozzleLifeGrams: 1000,
-    nozzleUsedGrams: 820,
-    lifetimePrintedGrams: 12400,
-    status: "Active",
-  },
-  {
-    id: "2",
-    name: "Printer 2",
-    model: "Creality Ender 3 V3",
-    purchasePrice: 4500,
-    powerKwh: 0.25,
-    nozzleCost: 15,
-    nozzleLifeGrams: 800,
-    nozzleUsedGrams: 160,
-    lifetimePrintedGrams: 4800,
-    status: "Active",
-  },
-  {
-    id: "3",
-    name: "Printer 3",
-    model: "Prusa MK4",
-    purchasePrice: 8000,
-    powerKwh: 0.35,
-    nozzleCost: 25,
-    nozzleLifeGrams: 900,
-    nozzleUsedGrams: 0,
-    lifetimePrintedGrams: 0,
-    status: "Inactive",
-  },
-];
-
-const LIFETIME_MAX = 50000; // arbitrary max grams for lifetime progress bar
 
 const emptyForm = {
   name: "",
   model: "",
-  purchasePrice: "",
-  powerKwh: "",
-  nozzleCost: "",
-  nozzleLifeGrams: "",
+  purchase_price: "",
+  lifetime_kg: "500",
+  nozzle_cost: "",
+  nozzle_lifetime_grams: "",
+  electricity_rate_per_hour: "0.45",
 };
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function Printers() {
-  const [printers, setPrinters] = useState<PrinterItem[]>(MOCK_PRINTERS);
-  const [selectedId, setSelectedId] = useState<string | null>("1");
+  const [printers, setPrinters]   = useState<PrinterItem[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [form, setForm]             = useState(emptyForm);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+
+  function load() {
+    setLoading(true);
+    api.get<PrinterItem[]>("/api/printers")
+      .then((data) => {
+        setPrinters(data);
+        if (!selectedId && data.length > 0) setSelectedId(data[0].id);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); }, []);
 
   const selected = printers.find((p) => p.id === selectedId) ?? null;
+
+  const nozzlePct     = selected ? Math.min(100, selected.nozzle_usage_percent) : 0;
+  const lifetimePct   = selected ? Math.min(100, (selected.total_printed_grams / (selected.lifetime_kg * 1000)) * 100) : 0;
+  const nozzleWarning = nozzlePct > 80;
 
   function openAdd() {
     setEditingId(null);
@@ -106,152 +79,134 @@ export function Printers() {
     if (!selected) return;
     setEditingId(selected.id);
     setForm({
-      name: selected.name,
-      model: selected.model,
-      purchasePrice: String(selected.purchasePrice),
-      powerKwh: String(selected.powerKwh),
-      nozzleCost: String(selected.nozzleCost),
-      nozzleLifeGrams: String(selected.nozzleLifeGrams),
+      name:                      selected.name,
+      model:                     selected.model,
+      purchase_price:            String(selected.purchase_price),
+      lifetime_kg:               String(selected.lifetime_kg),
+      nozzle_cost:               String(selected.nozzle_cost),
+      nozzle_lifetime_grams:     String(selected.nozzle_lifetime_grams),
+      electricity_rate_per_hour: String(selected.electricity_rate_per_hour),
     });
     setShowDialog(true);
   }
 
-  function handleSave() {
-    if (editingId) {
-      setPrinters((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                name: form.name,
-                model: form.model,
-                purchasePrice: Number(form.purchasePrice),
-                powerKwh: Number(form.powerKwh),
-                nozzleCost: Number(form.nozzleCost),
-                nozzleLifeGrams: Number(form.nozzleLifeGrams),
-              }
-            : p
-        )
-      );
-    } else {
-      const newPrinter: PrinterItem = {
-        id: String(Date.now()),
-        name: form.name,
-        model: form.model,
-        purchasePrice: Number(form.purchasePrice),
-        powerKwh: Number(form.powerKwh),
-        nozzleCost: Number(form.nozzleCost),
-        nozzleLifeGrams: Number(form.nozzleLifeGrams),
-        nozzleUsedGrams: 0,
-        lifetimePrintedGrams: 0,
-        status: "Active",
+  async function handleSave() {
+    if (!form.name.trim() || !form.model.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        name:                      form.name,
+        model:                     form.model,
+        purchase_price:            Number(form.purchase_price),
+        lifetime_kg:               Number(form.lifetime_kg),
+        nozzle_cost:               Number(form.nozzle_cost),
+        nozzle_lifetime_grams:     Number(form.nozzle_lifetime_grams),
+        electricity_rate_per_hour: Number(form.electricity_rate_per_hour),
+        notes:                     "",
       };
-      setPrinters((prev) => [...prev, newPrinter]);
-      setSelectedId(newPrinter.id);
+      if (editingId) {
+        const updated = await api.put<PrinterItem>(`/api/printers/${editingId}`, body);
+        setPrinters((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+      } else {
+        const created = await api.post<PrinterItem>("/api/printers", body);
+        setPrinters((prev) => [...prev, created]);
+        setSelectedId(created.id);
+      }
+      setShowDialog(false);
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
     }
-    setShowDialog(false);
   }
 
-  function handleResetNozzle() {
+  async function handleResetNozzle() {
     if (!selectedId) return;
-    setPrinters((prev) =>
-      prev.map((p) =>
-        p.id === selectedId ? { ...p, nozzleUsedGrams: 0 } : p
-      )
-    );
+    try {
+      const updated = await api.post<PrinterItem>(`/api/printers/${selectedId}/reset-nozzle`, {});
+      setPrinters((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+    } catch {
+      // silently fail
+    }
   }
-
-  function calcDepreciation(p: PrinterItem) {
-    if (p.lifetimePrintedGrams === 0) return 0;
-    return p.purchasePrice / p.lifetimePrintedGrams;
-  }
-
-  function calcElectricity(p: PrinterItem) {
-    return p.powerKwh * 0.45;
-  }
-
-  function calcNozzle(p: PrinterItem) {
-    return p.nozzleCost / p.nozzleLifeGrams;
-  }
-
-  const nozzlePct = selected
-    ? Math.min(100, (selected.nozzleUsedGrams / selected.nozzleLifeGrams) * 100)
-    : 0;
-  const lifetimePct = selected
-    ? Math.min(100, (selected.lifetimePrintedGrams / LIFETIME_MAX) * 100)
-    : 0;
-  const nozzleWarning = nozzlePct > 80;
 
   return (
     <div className="flex h-full">
       {/* LEFT PANEL */}
       <div className="w-[360px] border-r bg-white flex flex-col">
-        {/* Header */}
         <div className="p-4 border-b">
           <div className="flex items-center gap-2 mb-3">
             <Printer className="size-5" style={{ color: "#1e3a8a" }} />
-            <span className="font-semibold text-base" style={{ color: "#0f172a" }}>
-              Printers
-            </span>
+            <span className="font-semibold text-base flex-1" style={{ color: "#0f172a" }}>Printers</span>
+            <Button size="sm" variant="ghost" onClick={load} disabled={loading}>
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            </Button>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" onClick={openAdd} style={{ backgroundColor: "#1e3a8a" }}>
-              <Plus />
-              Add
+              <Plus size={14} className="mr-1" /> Add
             </Button>
             <Button size="sm" variant="outline" onClick={openEdit} disabled={!selected}>
-              <Pencil />
-              Edit
+              <Pencil size={14} className="mr-1" /> Edit
             </Button>
             <Button size="sm" variant="outline" onClick={handleResetNozzle} disabled={!selected}>
-              <Wrench />
-              Reset Nozzle
+              <Wrench size={14} className="mr-1" /> Reset Nozzle
             </Button>
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-auto flex-1">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b" style={{ backgroundColor: "#f8fafc" }}>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: "#64748b" }}>Name</th>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: "#64748b" }}>Model</th>
-                <th className="text-right px-4 py-2 font-medium" style={{ color: "#64748b" }}>Printed (kg)</th>
-                <th className="text-center px-4 py-2 font-medium" style={{ color: "#64748b" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {printers.map((p) => (
-                <tr
-                  key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  className="border-b cursor-pointer hover:bg-slate-50 transition-colors"
-                  style={{
-                    backgroundColor: selectedId === p.id ? "#eff6ff" : undefined,
-                  }}
-                >
-                  <td className="px-4 py-3 font-medium" style={{ color: "#0f172a" }}>{p.name}</td>
-                  <td className="px-4 py-3" style={{ color: "#64748b" }}>{p.model}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: "#0f172a" }}>
-                    {(p.lifetimePrintedGrams / 1000).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge
-                      className="text-xs"
-                      style={{
-                        backgroundColor: p.status === "Active" ? "#dcfce7" : "#f1f5f9",
-                        color: p.status === "Active" ? "#10b981" : "#64748b",
-                        border: "none",
-                      }}
-                    >
-                      {p.status}
-                    </Badge>
-                  </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="animate-spin size-5" style={{ color: "#1e3a8a" }} />
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b" style={{ backgroundColor: "#f8fafc" }}>
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: "#64748b" }}>Name</th>
+                  <th className="text-left px-4 py-2 font-medium" style={{ color: "#64748b" }}>Model</th>
+                  <th className="text-right px-4 py-2 font-medium" style={{ color: "#64748b" }}>Printed (kg)</th>
+                  <th className="text-center px-4 py-2 font-medium" style={{ color: "#64748b" }}>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {printers.map((p) => (
+                  <tr
+                    key={p.id}
+                    onClick={() => setSelectedId(p.id)}
+                    className="border-b cursor-pointer hover:bg-slate-50 transition-colors"
+                    style={{ backgroundColor: selectedId === p.id ? "#eff6ff" : undefined }}
+                  >
+                    <td className="px-4 py-3 font-medium" style={{ color: "#0f172a" }}>{p.name}</td>
+                    <td className="px-4 py-3" style={{ color: "#64748b" }}>{p.model}</td>
+                    <td className="px-4 py-3 text-right" style={{ color: "#0f172a" }}>
+                      {(p.total_printed_grams / 1000).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge
+                        className="text-xs"
+                        style={{
+                          backgroundColor: p.is_active ? "#dcfce7" : "#f1f5f9",
+                          color: p.is_active ? "#10b981" : "#64748b",
+                          border: "none",
+                        }}
+                      >
+                        {p.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+                {printers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center" style={{ color: "#64748b" }}>
+                      No printers yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -272,60 +227,47 @@ export function Printers() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-xl" style={{ color: "#0f172a" }}>
-                      {selected.name}
-                    </CardTitle>
+                    <CardTitle className="text-xl" style={{ color: "#0f172a" }}>{selected.name}</CardTitle>
                     <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>{selected.model}</p>
                   </div>
-                  <Badge
-                    style={{
-                      backgroundColor: selected.status === "Active" ? "#dcfce7" : "#f1f5f9",
-                      color: selected.status === "Active" ? "#10b981" : "#64748b",
-                      border: "none",
-                    }}
-                  >
-                    {selected.status}
+                  <Badge style={{
+                    backgroundColor: selected.is_active ? "#dcfce7" : "#f1f5f9",
+                    color: selected.is_active ? "#10b981" : "#64748b",
+                    border: "none",
+                  }}>
+                    {selected.is_active ? "Active" : "Inactive"}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-5">
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide mb-0.5" style={{ color: "#64748b" }}>
-                      Purchase Price
-                    </p>
-                    <p className="text-base font-semibold" style={{ color: "#0f172a" }}>
-                      EGP {selected.purchasePrice.toLocaleString()}
-                    </p>
+                    <p className="text-xs font-medium uppercase tracking-wide mb-0.5" style={{ color: "#64748b" }}>Purchase Price</p>
+                    <p className="text-base font-semibold" style={{ color: "#0f172a" }}>EGP {selected.purchase_price.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide mb-0.5" style={{ color: "#64748b" }}>
-                      Power Consumption
-                    </p>
-                    <p className="text-base font-semibold" style={{ color: "#0f172a" }}>
-                      {selected.powerKwh} kWh
-                    </p>
+                    <p className="text-xs font-medium uppercase tracking-wide mb-0.5" style={{ color: "#64748b" }}>Lifetime (kg)</p>
+                    <p className="text-base font-semibold" style={{ color: "#0f172a" }}>{selected.lifetime_kg} kg</p>
                   </div>
                 </div>
 
-                {/* Mini cost cards */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-lg p-3 text-center" style={{ backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
                     <p className="text-xs font-medium mb-1" style={{ color: "#1e3a8a" }}>Depreciation/g</p>
                     <p className="text-sm font-bold" style={{ color: "#1e3a8a" }}>
-                      {calcDepreciation(selected).toFixed(4)} EGP
+                      {selected.depreciation_per_gram.toFixed(4)} EGP
                     </p>
                   </div>
                   <div className="rounded-lg p-3 text-center" style={{ backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0" }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: "#10b981" }}>Electricity/g</p>
+                    <p className="text-xs font-medium mb-1" style={{ color: "#10b981" }}>Electricity/hr</p>
                     <p className="text-sm font-bold" style={{ color: "#10b981" }}>
-                      {calcElectricity(selected).toFixed(4)} EGP
+                      {selected.electricity_rate_per_hour.toFixed(2)} EGP
                     </p>
                   </div>
                   <div className="rounded-lg p-3 text-center" style={{ backgroundColor: "#fdf4ff", border: "1px solid #e9d5ff" }}>
-                    <p className="text-xs font-medium mb-1" style={{ color: "#7c3aed" }}>Nozzle/g</p>
+                    <p className="text-xs font-medium mb-1" style={{ color: "#7c3aed" }}>Nozzle Cost</p>
                     <p className="text-sm font-bold" style={{ color: "#7c3aed" }}>
-                      {calcNozzle(selected).toFixed(4)} EGP
+                      EGP {selected.nozzle_cost.toFixed(0)}
                     </p>
                   </div>
                 </div>
@@ -342,23 +284,21 @@ export function Printers() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span style={{ color: "#64748b" }}>
-                    Used: {selected.nozzleUsedGrams} g / {selected.nozzleLifeGrams} g life
+                    Used: {Math.round(selected.current_nozzle_grams)} g / {selected.nozzle_lifetime_grams} g life
                   </span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: nozzleWarning ? "#f59e0b" : "#0f172a" }}
-                  >
+                  <span className="font-semibold" style={{ color: nozzleWarning ? "#f59e0b" : "#0f172a" }}>
                     {nozzlePct.toFixed(0)}%
+                    {nozzleWarning && (
+                      <Badge className="ml-1.5 text-[10px] px-1.5 py-0" style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "none" }}>
+                        Replace soon
+                      </Badge>
+                    )}
                   </span>
                 </div>
-                {/* using raw div for colored progress since shadcn Progress uses CSS var --primary */}
                 <div className="w-full rounded-full h-2.5" style={{ backgroundColor: "#e2e8f0" }}>
                   <div
                     className="h-2.5 rounded-full transition-all"
-                    style={{
-                      width: `${nozzlePct}%`,
-                      backgroundColor: nozzleWarning ? "#f59e0b" : "#10b981",
-                    }}
+                    style={{ width: `${nozzlePct}%`, backgroundColor: nozzleWarning ? "#f59e0b" : "#10b981" }}
                   />
                 </div>
                 {nozzleWarning && (
@@ -367,8 +307,7 @@ export function Printers() {
                   </p>
                 )}
                 <Button size="sm" variant="outline" onClick={handleResetNozzle}>
-                  <Wrench />
-                  Reset Nozzle
+                  <Wrench size={14} className="mr-1" /> Reset Nozzle
                 </Button>
               </CardContent>
             </Card>
@@ -383,17 +322,14 @@ export function Printers() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span style={{ color: "#64748b" }}>
-                    Total printed: {selected.lifetimePrintedGrams.toLocaleString()} g
+                    Total printed: {selected.total_printed_grams.toLocaleString()} g
                   </span>
                   <span className="font-semibold" style={{ color: "#0f172a" }}>
-                    {lifetimePct.toFixed(1)}% of {(LIFETIME_MAX / 1000).toFixed(0)} kg max
+                    {lifetimePct.toFixed(1)}% of {selected.lifetime_kg} kg max
                   </span>
                 </div>
                 <div className="w-full rounded-full h-2.5" style={{ backgroundColor: "#e2e8f0" }}>
-                  <div
-                    className="h-2.5 rounded-full transition-all"
-                    style={{ width: `${lifetimePct}%`, backgroundColor: "#1e3a8a" }}
-                  />
+                  <div className="h-2.5 rounded-full transition-all" style={{ width: `${lifetimePct}%`, backgroundColor: "#1e3a8a" }} />
                 </div>
               </CardContent>
             </Card>
@@ -409,35 +345,40 @@ export function Printers() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Name</Label>
+              <Label>Name <span className="text-red-500">*</span></Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Printer 4" />
             </div>
             <div className="space-y-1.5">
-              <Label>Model</Label>
+              <Label>Model <span className="text-red-500">*</span></Label>
               <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder="Bambu X1C" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Purchase Price (EGP)</Label>
-                <Input type="number" value={form.purchasePrice} onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })} placeholder="15000" />
+                <Input type="number" value={form.purchase_price} onChange={(e) => setForm({ ...form, purchase_price: e.target.value })} placeholder="15000" />
               </div>
               <div className="space-y-1.5">
-                <Label>Power (kWh)</Label>
-                <Input type="number" value={form.powerKwh} onChange={(e) => setForm({ ...form, powerKwh: e.target.value })} placeholder="0.4" step="0.01" />
+                <Label>Lifetime (kg)</Label>
+                <Input type="number" value={form.lifetime_kg} onChange={(e) => setForm({ ...form, lifetime_kg: e.target.value })} placeholder="500" />
               </div>
               <div className="space-y-1.5">
                 <Label>Nozzle Cost (EGP)</Label>
-                <Input type="number" value={form.nozzleCost} onChange={(e) => setForm({ ...form, nozzleCost: e.target.value })} placeholder="35" />
+                <Input type="number" value={form.nozzle_cost} onChange={(e) => setForm({ ...form, nozzle_cost: e.target.value })} placeholder="35" />
               </div>
               <div className="space-y-1.5">
                 <Label>Nozzle Life (g)</Label>
-                <Input type="number" value={form.nozzleLifeGrams} onChange={(e) => setForm({ ...form, nozzleLifeGrams: e.target.value })} placeholder="1000" />
+                <Input type="number" value={form.nozzle_lifetime_grams} onChange={(e) => setForm({ ...form, nozzle_lifetime_grams: e.target.value })} placeholder="1000" />
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} style={{ backgroundColor: "#1e3a8a" }}>
+            <Button
+              onClick={handleSave}
+              disabled={!form.name.trim() || !form.model.trim() || saving}
+              style={{ backgroundColor: "#1e3a8a" }}
+            >
+              {saving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
               {editingId ? "Save Changes" : "Add Printer"}
             </Button>
           </DialogFooter>

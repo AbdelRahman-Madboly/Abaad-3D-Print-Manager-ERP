@@ -1,26 +1,47 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 interface LoginProps {
   onLogin: () => void;
 }
 
-export function Login({ onLogin }: LoginProps) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+interface LoginResponse {
+  token: string;
+  user: { id: string; username: string; role: string };
+}
 
-  function handleSignIn() {
+export function Login({ onLogin }: LoginProps) {
+  const { login } = useAuth();
+  const [username, setUsername]       = useState("");
+  const [password, setPassword]       = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError]             = useState("");
+  const [loading, setLoading]         = useState(false);
+
+  async function handleSignIn() {
     if (!username.trim() || !password.trim()) {
       setError("Please enter your username and password.");
       return;
     }
     setError("");
-    onLogin();
+    setLoading(true);
+    try {
+      const res = await api.post<LoginResponse>("/api/auth/login", {
+        username: username.trim(),
+        password,
+      });
+      login(res.token, res.user);
+      onLogin();
+    } catch (err) {
+      setError((err as Error).message || "Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -30,19 +51,13 @@ export function Login({ onLogin }: LoginProps) {
     >
       <div className="w-full max-w-sm shadow-lg rounded-xl overflow-hidden">
         {/* Header */}
-        <div
-          className="px-8 py-8 text-center"
-          style={{ backgroundColor: "#1e293b" }}
-        >
+        <div className="px-8 py-8 text-center" style={{ backgroundColor: "#1e293b" }}>
           <div className="flex justify-center mb-4">
             <img
               src="/logo.png"
               alt="Logo"
               className="h-14 w-14 rounded-xl object-cover"
-              onError={(e) => {
-                const img = e.currentTarget as HTMLImageElement;
-                img.style.display = "none";
-              }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           </div>
           <p className="text-white text-xl font-semibold">Abaad ERP</p>
@@ -54,23 +69,20 @@ export function Login({ onLogin }: LoginProps) {
         {/* Form */}
         <div className="bg-white px-8 py-8 space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="username" style={{ color: "#0f172a" }}>
-              Username
-            </Label>
+            <Label htmlFor="username" style={{ color: "#0f172a" }}>Username</Label>
             <Input
               id="username"
               placeholder="Enter username"
               value={username}
               autoComplete="username"
+              disabled={loading}
               onChange={(e) => setUsername(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password" style={{ color: "#0f172a" }}>
-              Password
-            </Label>
+            <Label htmlFor="password" style={{ color: "#0f172a" }}>Password</Label>
             <div className="relative">
               <Input
                 id="password"
@@ -79,6 +91,7 @@ export function Login({ onLogin }: LoginProps) {
                 value={password}
                 autoComplete="current-password"
                 className="pr-10"
+                disabled={loading}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
               />
@@ -103,8 +116,16 @@ export function Login({ onLogin }: LoginProps) {
             className="w-full text-white font-medium hover:opacity-90"
             style={{ backgroundColor: "#1e3a8a" }}
             onClick={handleSignIn}
+            disabled={loading}
           >
-            Sign In
+            {loading ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              "Sign In"
+            )}
           </Button>
         </div>
       </div>

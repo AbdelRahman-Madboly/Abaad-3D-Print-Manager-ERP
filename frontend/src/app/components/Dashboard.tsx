@@ -1,85 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   RefreshCw,
   Clock,
   CreditCard,
   Wrench,
+  Loader2,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "./ui/select";
+import { api } from "@/lib/api";
 
-// ── Mock data ────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-const revenueData = [
-  { month: "Jan", revenue: 18000 },
-  { month: "Feb", revenue: 21000 },
-  { month: "Mar", revenue: 19500 },
-  { month: "Apr", revenue: 24000 },
-  { month: "May", revenue: 22000 },
-  { month: "Jun", revenue: 24800 },
-];
+interface DashboardData {
+  period: string;
+  kpi: {
+    revenue: number;
+    gross_profit: number;
+    profit_margin: number;
+    total_orders: number;
+    active_spools: number;
+    total_expenses: number;
+    failure_cost: number;
+  };
+  alerts: {
+    overdue_count: number;
+    unpaid_count: number;
+    nozzle_alert_count: number;
+    nozzle_alerts: Array<Record<string, unknown>>;
+  };
+  charts: {
+    monthly_revenue: Array<{ month: string; revenue: number; profit: number }>;
+    order_status: Array<{ status: string; count: number }>;
+    filament_by_color: Array<{ color: string; grams: number }>;
+    expenses_by_cat: Array<{ category: string; total: number }>;
+  };
+  inventory: {
+    active_spools: number;
+    total_weight_g: number;
+    available_weight_g: number;
+  };
+}
 
-const filamentData = [
-  { color: "Black", used: 840 },
-  { color: "White", used: 620 },
-  { color: "Blue", used: 390 },
-  { color: "Red", used: 280 },
-  { color: "Gray", used: 450 },
-];
+const STATUS_COLORS: Record<string, string> = {
+  Draft:        "#94a3b8",
+  Quote:        "#f59e0b",
+  Confirmed:    "#06b6d4",
+  "In Progress":"#3b82f6",
+  Ready:        "#10b981",
+  Delivered:    "#22c55e",
+  Cancelled:    "#ef4444",
+};
 
-const orderStatusData = [
-  { name: "Delivered", value: 28, fill: "#10b981" },
-  { name: "In Progress", value: 11, fill: "#3b82f6" },
-  { name: "Ready", value: 5, fill: "#10b981" },
-  { name: "Cancelled", value: 3, fill: "#ef4444" },
-];
-
-const printers = [
-  { name: "Printer 1", model: "Bambu X1C", lifetime: 73, nozzle: 82 },
-  { name: "Printer 2", model: "Creality Ender 3", lifetime: 40, nozzle: 20 },
-];
-
-const topCustomers = [
-  { name: "Ahmed Hassan", revenue: 5200 },
-  { name: "Sara Khalil", revenue: 4100 },
-  { name: "Mohamed Ali", revenue: 3850 },
-  { name: "Nour Ibrahim", revenue: 3200 },
-  { name: "Youssef Tarek", revenue: 2750 },
-];
-
-const expenseCategories = [
-  { category: "Filament", amount: 6800, color: "#3b82f6" },
-  { category: "Electricity", amount: 2400, color: "#f59e0b" },
-  { category: "Maintenance", amount: 1200, color: "#ef4444" },
-  { category: "Shipping", amount: 880, color: "#10b981" },
-  { category: "Miscellaneous", amount: 400, color: "#64748b" },
-];
-
-// ── Sub-components ───────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -89,26 +73,17 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface ActionAlertCardProps {
+function ActionAlertCard({
+  borderColor, icon, count, label, description,
+}: {
   borderColor: string;
   icon: React.ReactNode;
   count: string;
   label: string;
   description: string;
-}
-
-function ActionAlertCard({
-  borderColor,
-  icon,
-  count,
-  label,
-  description,
-}: ActionAlertCardProps) {
+}) {
   return (
-    <Card
-      className="flex-1 border-l-4 shadow-sm"
-      style={{ borderLeftColor: borderColor }}
-    >
+    <Card className="flex-1 border-l-4 shadow-sm" style={{ borderLeftColor: borderColor }}>
       <CardContent className="flex items-center gap-4 py-4 px-5">
         <div
           className="flex h-10 w-10 items-center justify-center rounded-lg shrink-0"
@@ -126,24 +101,15 @@ function ActionAlertCard({
   );
 }
 
-interface KpiCardProps {
-  title: string;
-  value: string;
-  sub: string;
-  subColor?: string;
-}
-
-function KpiCard({ title, value, sub, subColor = "#64748b" }: KpiCardProps) {
+function KpiCard({ title, value, sub, subColor = "#64748b" }: {
+  title: string; value: string; sub: string; subColor?: string;
+}) {
   return (
     <Card className="flex-1 shadow-sm">
       <CardContent className="py-5 px-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b] mb-1">
-          {title}
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#64748b] mb-1">{title}</p>
         <p className="text-2xl font-bold text-[#0f172a]">{value}</p>
-        <p className="text-xs mt-1 font-medium" style={{ color: subColor }}>
-          {sub}
-        </p>
+        <p className="text-xs mt-1 font-medium" style={{ color: subColor }}>{sub}</p>
       </CardContent>
     </Card>
   );
@@ -152,7 +118,45 @@ function KpiCard({ title, value, sub, subColor = "#64748b" }: KpiCardProps) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function Dashboard() {
-  const [period, setPeriod] = useState("this-month");
+  const [period, setPeriod]   = useState("this-month");
+  const [data, setData]       = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  function load() {
+    setLoading(true);
+    api.get<DashboardData>(`/api/dashboard/summary?period=${period}`)
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); }, [period]);
+
+  const kpi     = data?.kpi;
+  const alerts  = data?.alerts;
+  const charts  = data?.charts;
+
+  // Shape chart data for recharts
+  const revenueData = (charts?.monthly_revenue ?? []).map((m) => ({
+    month: m.month.slice(5), // "2026-01" → "01" or keep last 2 chars as label
+    revenue: m.revenue,
+  }));
+
+  const filamentData = (charts?.filament_by_color ?? []).map((f) => ({
+    color: f.color,
+    used: f.grams,
+  }));
+
+  const orderStatusData = (charts?.order_status ?? []).map((s) => ({
+    name: s.status,
+    value: s.count,
+    fill: STATUS_COLORS[s.status] ?? "#94a3b8",
+  }));
+
+  const expensesData = (charts?.expenses_by_cat ?? []).map((e) => ({
+    category: e.category,
+    amount: e.total,
+  }));
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-6 space-y-6">
@@ -174,321 +178,233 @@ export function Dashboard() {
               <SelectItem value="this-year">This Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" className="text-[#64748b] hover:text-[#0f172a]">
-            <RefreshCw className="h-4 w-4" />
+          <Button
+            variant="ghost" size="icon"
+            className="text-[#64748b] hover:text-[#0f172a]"
+            onClick={load}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
 
-      {/* 2. Action Center */}
-      <div>
-        <SectionLabel>Action Center</SectionLabel>
-        <div className="flex gap-4">
-          <ActionAlertCard
-            borderColor="#ef4444"
-            icon={<Clock className="h-5 w-5" style={{ color: "#ef4444" }} />}
-            label="Overdue Orders"
-            count="3 orders"
-            description="Need immediate attention"
-          />
-          <ActionAlertCard
-            borderColor="#f59e0b"
-            icon={<CreditCard className="h-5 w-5" style={{ color: "#f59e0b" }} />}
-            label="Unpaid Orders"
-            count="7 orders"
-            description="Awaiting payment"
-          />
-          <ActionAlertCard
-            borderColor="#06b6d4"
-            icon={<Wrench className="h-5 w-5" style={{ color: "#06b6d4" }} />}
-            label="Nozzle Alerts"
-            count="1 printer"
-            description="Nozzle wear > 80%"
-          />
+      {loading && !data ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="animate-spin h-8 w-8 text-[#1e3a8a]" />
         </div>
-      </div>
+      ) : (
+        <>
+          {/* 2. Action Center */}
+          <div>
+            <SectionLabel>Action Center</SectionLabel>
+            <div className="flex gap-4">
+              <ActionAlertCard
+                borderColor="#ef4444"
+                icon={<Clock className="h-5 w-5" style={{ color: "#ef4444" }} />}
+                label="Overdue Orders"
+                count={`${alerts?.overdue_count ?? 0} order${(alerts?.overdue_count ?? 0) !== 1 ? "s" : ""}`}
+                description="Need immediate attention"
+              />
+              <ActionAlertCard
+                borderColor="#f59e0b"
+                icon={<CreditCard className="h-5 w-5" style={{ color: "#f59e0b" }} />}
+                label="Unpaid Orders"
+                count={`${alerts?.unpaid_count ?? 0} order${(alerts?.unpaid_count ?? 0) !== 1 ? "s" : ""}`}
+                description="Awaiting payment"
+              />
+              <ActionAlertCard
+                borderColor="#06b6d4"
+                icon={<Wrench className="h-5 w-5" style={{ color: "#06b6d4" }} />}
+                label="Nozzle Alerts"
+                count={`${alerts?.nozzle_alert_count ?? 0} printer${(alerts?.nozzle_alert_count ?? 0) !== 1 ? "s" : ""}`}
+                description="Nozzle wear > 80%"
+              />
+            </div>
+          </div>
 
-      {/* 3. KPI Overview */}
-      <div>
-        <SectionLabel>Overview</SectionLabel>
-        <div className="flex gap-4">
-          <KpiCard
-            title="Revenue"
-            value="24,800 EGP"
-            sub="↑ 18% vs last month"
-            subColor="#10b981"
-          />
-          <KpiCard
-            title="Profit"
-            value="9,120 EGP"
-            sub="36.8% margin"
-            subColor="#10b981"
-          />
-          <KpiCard
-            title="Orders"
-            value="47 orders"
-            sub="this month"
-          />
-          <KpiCard
-            title="Filament"
-            value="6 active spools"
-            sub="3 colors"
-          />
-        </div>
-      </div>
+          {/* 3. KPI Overview */}
+          <div>
+            <SectionLabel>Overview</SectionLabel>
+            <div className="flex gap-4">
+              <KpiCard
+                title="Revenue"
+                value={`${(kpi?.revenue ?? 0).toLocaleString()} EGP`}
+                sub={`${(kpi?.profit_margin ?? 0).toFixed(1)}% margin`}
+                subColor="#10b981"
+              />
+              <KpiCard
+                title="Profit"
+                value={`${(kpi?.gross_profit ?? 0).toLocaleString()} EGP`}
+                sub="gross profit"
+                subColor="#10b981"
+              />
+              <KpiCard
+                title="Orders"
+                value={`${kpi?.total_orders ?? 0} orders`}
+                sub="all time"
+              />
+              <KpiCard
+                title="Filament"
+                value={`${kpi?.active_spools ?? 0} active spools`}
+                sub="in inventory"
+              />
+            </div>
+          </div>
 
-      {/* 4. Charts */}
-      <div>
-        <SectionLabel>Analytics</SectionLabel>
-        <Card className="shadow-sm">
-          <CardContent className="pt-4 pb-6 px-5">
-            <Tabs defaultValue="revenue">
-              <TabsList className="mb-4">
-                <TabsTrigger value="revenue">Revenue</TabsTrigger>
-                <TabsTrigger value="filament">Filament Usage</TabsTrigger>
-                <TabsTrigger value="orders">Order Status</TabsTrigger>
-              </TabsList>
+          {/* 4. Charts */}
+          <div>
+            <SectionLabel>Analytics</SectionLabel>
+            <Card className="shadow-sm">
+              <CardContent className="pt-4 pb-6 px-5">
+                <Tabs defaultValue="revenue">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="revenue">Revenue</TabsTrigger>
+                    <TabsTrigger value="filament">Filament Usage</TabsTrigger>
+                    <TabsTrigger value="orders">Order Status</TabsTrigger>
+                  </TabsList>
 
-              {/* Revenue chart */}
-              <TabsContent value="revenue">
-                <p className="text-sm font-medium text-[#64748b] mb-3">
-                  Monthly Revenue (EGP) — Last 6 Months
-                </p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={revenueData} barSize={32}>
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                    />
-                    <Tooltip
-                      formatter={(v: number) => [`${v.toLocaleString()} EGP`, "Revenue"]}
-                      contentStyle={{
-                        borderRadius: 8,
-                        border: "1px solid #e2e8f0",
-                        fontSize: 12,
-                      }}
-                    />
-                    <Bar dataKey="revenue" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </TabsContent>
+                  <TabsContent value="revenue">
+                    <p className="text-sm font-medium text-[#64748b] mb-3">
+                      Monthly Revenue (EGP)
+                    </p>
+                    {revenueData.length === 0 ? (
+                      <div className="flex items-center justify-center h-40 text-[#64748b] text-sm">
+                        No revenue data yet
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={revenueData} barSize={32}>
+                          <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                          <Tooltip
+                            formatter={(v: number) => [`${v.toLocaleString()} EGP`, "Revenue"]}
+                            contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                          />
+                          <Bar dataKey="revenue" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </TabsContent>
 
-              {/* Filament chart */}
-              <TabsContent value="filament">
-                <p className="text-sm font-medium text-[#64748b] mb-3">
-                  Filament Used by Color (grams)
-                </p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={filamentData} barSize={32}>
-                    <XAxis
-                      dataKey="color"
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      formatter={(v: number) => [`${v}g`, "Used"]}
-                      contentStyle={{
-                        borderRadius: 8,
-                        border: "1px solid #e2e8f0",
-                        fontSize: 12,
-                      }}
-                    />
-                    <Bar dataKey="used" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </TabsContent>
+                  <TabsContent value="filament">
+                    <p className="text-sm font-medium text-[#64748b] mb-3">
+                      Filament Used by Color (grams)
+                    </p>
+                    {filamentData.length === 0 ? (
+                      <div className="flex items-center justify-center h-40 text-[#64748b] text-sm">
+                        No filament usage data yet
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={filamentData} barSize={32}>
+                          <XAxis dataKey="color" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                          <Tooltip
+                            formatter={(v: number) => [`${v}g`, "Used"]}
+                            contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                          />
+                          <Bar dataKey="used" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </TabsContent>
 
-              {/* Order status pie chart */}
-              <TabsContent value="orders">
-                <p className="text-sm font-medium text-[#64748b] mb-3">
-                  Order Status Distribution
-                </p>
-                <ResponsiveContainer width="100%" height={260}>
-                  <PieChart>
-                    <Pie
-                      data={orderStatusData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}
-                      labelLine={true}
-                    >
-                      {orderStatusData.map((entry, index) => (
-                        <Cell key={index} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Legend
-                      iconType="circle"
-                      iconSize={10}
-                      formatter={(value) => (
-                        <span style={{ fontSize: 12, color: "#64748b" }}>{value}</span>
-                      )}
-                    />
-                    <Tooltip
-                      formatter={(v: number) => [v, "Orders"]}
-                      contentStyle={{
-                        borderRadius: 8,
-                        border: "1px solid #e2e8f0",
-                        fontSize: 12,
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 5. Printer Utilization */}
-      <div>
-        <SectionLabel>Printer Utilization</SectionLabel>
-        <div className="grid grid-cols-2 gap-4">
-          {printers.map((printer) => (
-            <Card key={printer.name} className="shadow-sm">
-              <CardHeader className="pb-2 pt-4 px-5">
-                <CardTitle className="text-base font-semibold text-[#0f172a]">
-                  {printer.name}
-                </CardTitle>
-                <p className="text-xs text-[#64748b]">{printer.model}</p>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 space-y-4">
-                {/* Lifetime Usage */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#64748b] font-medium">Lifetime Usage</span>
-                    <span className="font-semibold text-[#0f172a]">{printer.lifetime}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-[#e2e8f0] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${printer.lifetime}%`,
-                        backgroundColor: "#1e3a8a",
-                      }}
-                    />
-                  </div>
-                </div>
-                {/* Nozzle Wear */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#64748b] font-medium">Nozzle Wear</span>
-                    <span
-                      className="font-semibold"
-                      style={{ color: printer.nozzle > 80 ? "#f59e0b" : "#0f172a" }}
-                    >
-                      {printer.nozzle}%
-                      {printer.nozzle > 80 && (
-                        <Badge
-                          className="ml-1.5 text-[10px] px-1.5 py-0"
-                          style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "none" }}
-                        >
-                          Replace soon
-                        </Badge>
-                      )}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-[#e2e8f0] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${printer.nozzle}%`,
-                        backgroundColor: printer.nozzle > 80 ? "#f59e0b" : "#10b981",
-                      }}
-                    />
-                  </div>
-                </div>
+                  <TabsContent value="orders">
+                    <p className="text-sm font-medium text-[#64748b] mb-3">
+                      Order Status Distribution
+                    </p>
+                    {orderStatusData.length === 0 ? (
+                      <div className="flex items-center justify-center h-40 text-[#64748b] text-sm">
+                        No orders yet
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie
+                            data={orderStatusData}
+                            cx="50%" cy="50%"
+                            outerRadius={90}
+                            dataKey="value"
+                            label={({ name, value }) => `${name}: ${value}`}
+                            labelLine
+                          >
+                            {orderStatusData.map((entry, i) => (
+                              <Cell key={i} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Legend
+                            iconType="circle" iconSize={10}
+                            formatter={(value) => <span style={{ fontSize: 12, color: "#64748b" }}>{value}</span>}
+                          />
+                          <Tooltip
+                            formatter={(v: number) => [v, "Orders"]}
+                            contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* 6. Detailed Breakdowns */}
-      <div>
-        <SectionLabel>Detailed Breakdowns</SectionLabel>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Revenue by Customer */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2 pt-4 px-5">
-              <CardTitle className="text-sm font-semibold text-[#0f172a]">
-                Revenue by Customer
-              </CardTitle>
-              <p className="text-xs text-[#64748b]">Top 5 customers this period</p>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              <div className="space-y-0">
-                {topCustomers.map((customer, i) => (
-                  <div key={customer.name}>
-                    <div className="flex items-center justify-between py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#eff6ff] text-[#1e3a8a] text-xs font-bold shrink-0">
-                          {i + 1}
-                        </span>
-                        <span className="text-sm text-[#0f172a]">{customer.name}</span>
+          {/* 5. Expenses by Category */}
+          {expensesData.length > 0 && (
+            <div>
+              <SectionLabel>Detailed Breakdowns</SectionLabel>
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2 pt-4 px-5">
+                  <CardTitle className="text-sm font-semibold text-[#0f172a]">
+                    Expenses by Category
+                  </CardTitle>
+                  <p className="text-xs text-[#64748b]">Total operational costs</p>
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  <div className="space-y-0">
+                    {expensesData.map((item, i) => (
+                      <div key={item.category}>
+                        <div className="flex items-center justify-between py-2.5">
+                          <span className="text-sm text-[#0f172a]">{item.category}</span>
+                          <span className="text-sm font-semibold text-[#0f172a]">
+                            {item.amount.toLocaleString()} EGP
+                          </span>
+                        </div>
+                        {i < expensesData.length - 1 && <Separator className="bg-[#e2e8f0]" />}
                       </div>
-                      <span className="text-sm font-semibold text-[#0f172a]">
-                        {customer.revenue.toLocaleString()} EGP
-                      </span>
-                    </div>
-                    {i < topCustomers.length - 1 && (
-                      <Separator className="bg-[#e2e8f0]" />
-                    )}
+                    ))}
                   </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Nozzle alerts detail */}
+          {(alerts?.nozzle_alerts ?? []).length > 0 && (
+            <div>
+              <SectionLabel>Maintenance Required</SectionLabel>
+              <div className="flex flex-wrap gap-3">
+                {(alerts!.nozzle_alerts as Array<{ name: string; model: string; nozzle_usage_percent: number }>).map((p) => (
+                  <Card key={String(p.name)} className="shadow-sm flex-1 min-w-[200px]">
+                    <CardContent className="py-4 px-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-[#0f172a]">{String(p.name)}</p>
+                          <p className="text-xs text-[#64748b]">{String(p.model)}</p>
+                        </div>
+                        <Badge style={{ backgroundColor: "#fef3c7", color: "#92400e", border: "none" }}>
+                          {Number(p.nozzle_usage_percent).toFixed(0)}% worn
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Expenses by Category */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-2 pt-4 px-5">
-              <CardTitle className="text-sm font-semibold text-[#0f172a]">
-                Expenses by Category
-              </CardTitle>
-              <p className="text-xs text-[#64748b]">Total operational costs</p>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              <div className="space-y-0">
-                {expenseCategories.map((item, i) => (
-                  <div key={item.category}>
-                    <div className="flex items-center justify-between py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="h-3 w-3 rounded-full shrink-0"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        <span className="text-sm text-[#0f172a]">{item.category}</span>
-                      </div>
-                      <span className="text-sm font-semibold text-[#0f172a]">
-                        {item.amount.toLocaleString()} EGP
-                      </span>
-                    </div>
-                    {i < expenseCategories.length - 1 && (
-                      <Separator className="bg-[#e2e8f0]" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
