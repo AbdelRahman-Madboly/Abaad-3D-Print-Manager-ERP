@@ -1,4 +1,4 @@
-.PHONY: install test lint build clean run run-bundle venv
+.PHONY: install test lint build clean run run-bundle venv api frontend dev
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,23 @@ build:
 
 run-bundle:
 	./dist/abaad-erp/abaad-erp
+
+# ── React frontend + FastAPI bridge ──────────────────────────────────────────
+
+api:
+	uvicorn api.main:app --reload --port 8000
+
+frontend:
+	cd frontend && pnpm dev
+
+dev:
+	make -j2 api frontend
+
+frontend-install:
+	cd frontend && pnpm install
+
+frontend-build:
+	cd frontend && pnpm build
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 
